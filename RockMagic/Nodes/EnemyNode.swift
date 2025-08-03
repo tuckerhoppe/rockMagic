@@ -26,8 +26,8 @@ class EnemyNode: SKSpriteNode {
     var tossedAction: SKAction!
     
     let walkFrames = (1...5).map { SKTexture(imageNamed: "badGuyR\($0)") }
-    var moveSpeed: CGFloat = 100.0
-    let stoppingDistance: CGFloat = 25.0 // NEW: How close to get before stopping
+    var moveSpeed: CGFloat = GameManager.shared.enemyMoveSpeed
+    var stoppingDistance: CGFloat = 25.0 // NEW: How close to get before stopping
     var positionalOffset: CGFloat = 0.0
     
     // --- HEALTH  & DAMAGE PROPERTIES ---
@@ -56,6 +56,44 @@ class EnemyNode: SKSpriteNode {
         self.maxHealth = GameManager.shared.enemyHealth
         self.damage = GameManager.shared.enemyDamage
         self.currentHealth = self.maxHealth
+        
+        // 1. Get the base speed from the GameManager.
+        self.moveSpeed = GameManager.shared.enemyMoveSpeed
+        
+        let enemyTypeRoll = Int.random(in: 1...10)
+
+        if enemyTypeRoll <= 3 { // 30% chance t(rolls 1, 2, or 3)
+            // --- LITTLE RAT ---
+            self.moveSpeed *= 1.5
+            self.currentHealth = 60 // Easy to kill
+            self.setScale(0.65)
+            self.color = .red
+            self.colorBlendFactor = 0.3
+            print("Little Rat spawned!")
+            
+        } else if enemyTypeRoll <= 4 { // 10% chance to be a "Big Boy" (rolls 4)
+            // --- BIG BOY ---
+            self.moveSpeed *= 0.5
+            self.damage *= 2
+            self.currentHealth *= 2
+            self.maxHealth *= 2
+            self.setScale(1.75)
+            self.color = .blue
+            self.colorBlendFactor = 0.3
+            print("Big Boy spawned!")
+            
+        }
+//        else if enemyTypeRoll <= 7 { // 20% chance to be a "Blocker" (rolls 6 or 7)
+//            // --- ADD THIS NEW BLOCKER TYPE ---
+//            self.stoppingDistance = 250.0 // Stops far away
+//            self.damage = 0 // Deals no damage
+//            self.currentHealth = 50 // Easy to kill
+//            self.maxHealth = 50
+//            self.moveSpeed *= 1.2 // Moves quickly
+//            self.color = .yellow
+//            self.colorBlendFactor = 0.4
+//            print("Blocker spawned!")
+//        }
 
         // Setup
         setupPhysicsBody()
@@ -198,7 +236,7 @@ class EnemyNode: SKSpriteNode {
                 // --- Attacking Idle ---
                 // A target was provided, so we play the full attack loop.
                 let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
-                let frame2 = SKAction.setTexture(SKTexture(imageNamed: "badGuyLaunched"), resize: true)
+                //let frame2 = SKAction.setTexture(SKTexture(imageNamed: "badGuyLaunched"), resize: true)
                 let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
                 let wait = SKAction.wait(forDuration: 0.25)
                 

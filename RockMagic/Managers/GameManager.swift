@@ -73,11 +73,13 @@ class GameManager {
     // =================================================================
     // These values will be modified by your `increaseDifficulty()` function.
     
+    private var difficultyLevel = 0
+    
     /// The health of newly spawned enemies.
     var enemyHealth: Int = 100
     
     /// The damage dealt by an enemy's attack.
-    var enemyDamage: Int = 10
+    var enemyDamage: Int = 2
     
     /// The maximum number of enemies allowed on screen at once.
     var maxEnemyCount: Int = 0
@@ -86,7 +88,7 @@ class GameManager {
     var enemyMoveSpeed: CGFloat = 100.0
     
     /// The time between enemy spawns. A lower number is harder.
-    var enemySpawnInterval: TimeInterval = 2.0
+    var enemySpawnInterval: TimeInterval = 3.0
 
     
     // =================================================================
@@ -173,13 +175,31 @@ class GameManager {
     private func increaseDifficulty() {
         print("--- Difficulty Increased! ---")
         
+        // Increment the difficulty level counter each time this function runs
+        difficultyLevel += 1
+        
         // Increase enemy health by 10%
         let newHealth = Double(enemyHealth) * 1.10
         enemyHealth = Int(newHealth.rounded())
+        
+        enemyMoveSpeed *= 1.05
        
         
-        maxEnemyCount += 1
-        enemyDamage += 1
+        // Increase enemy damage by 8%
+        enemyDamage = Int(Double(enemyDamage) * 1.08)
+        
+        // Only add a new enemy every OTHER difficulty increase (every 30 seconds)
+        if difficultyLevel % 2 == 0 {
+            maxEnemyCount += 1
+            print("Max enemy count increased to: \(maxEnemyCount)")
+        }
+        
+        // As difficulty increases, reduce the time between enemy spawns by 5%.
+        // A smaller interval means a higher spawn rate, increasing pressure on the player.
+        // The 'if' statement prevents the interval from becoming too short.
+        if enemySpawnInterval > 1.0 { // Don't let it get too fast
+            enemySpawnInterval *= 0.95 // Make spawns 5% faster
+        }
                 
         print("New Enemy Health: \(enemyHealth)")
         print("Max Enemy Count: \(maxEnemyCount)")
@@ -194,6 +214,8 @@ class GameManager {
         isHealthPickupActive = false
         enemyHealth = 100 // Reset to base value
         maxEnemyCount = 1 // <-- ADD THIS LINE
-        enemyDamage = 10
+        enemyDamage = 2
+        enemySpawnInterval = 3.0
+        enemyMoveSpeed = 100.0
     }
 }

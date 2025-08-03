@@ -52,6 +52,17 @@ class CollisionManager {
             }
         }
         
+        // --- ADD THIS NEW BLOCK for Player and Enemy Contact ---
+        if firstBody.categoryBitMask == PhysicsCategory.player && secondBody.categoryBitMask == PhysicsCategory.enemy {
+            if let player = firstBody.node as? PlayerNode,
+               let enemy = secondBody.node as? EnemyNode {
+                
+                // Deal damage to the player on contact
+                if enemy.currentState == .dying || enemy.currentState == .tossed { return }
+                player.takeDamage(amount: enemy.damage)
+            }
+        }
+        
         // Case 1: Enemy hits a RockPiece
         if firstBody.categoryBitMask == PhysicsCategory.enemy && secondBody.categoryBitMask == PhysicsCategory.rockPiece {
             if let enemy = firstBody.node as? EnemyNode, let rockPiece = secondBody.node as? RockPiece {

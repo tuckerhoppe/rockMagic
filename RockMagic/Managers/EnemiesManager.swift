@@ -52,6 +52,13 @@ class EnemiesManager {
             if enemy.currentState == .tossed, let enemyBody = enemy.physicsBody, enemyBody.isResting {
                         enemy.setAnimationState(to: .idle)
                     }
+            
+            // This catches any "zombie" enemies that have died but haven't been removed.
+            if enemy.currentState == .dying, let body = enemy.physicsBody, body.isResting {
+                enemy.startDeathSequence()
+                // Continue to the next enemy to avoid running moveTowards on a dying node
+                continue
+            }
             enemy.moveTowards(objective: target as! PlayerNode)
         }
     }
