@@ -60,9 +60,9 @@ class EnemyNode: SKSpriteNode {
         // 1. Get the base speed from the GameManager.
         self.moveSpeed = GameManager.shared.enemyMoveSpeed
         
-        let enemyTypeRoll = Int.random(in: 1...10)
+        let enemyTypeRoll = Int.random(in: 1...13)
 
-        if enemyTypeRoll <= 3 { // 30% chance t(rolls 1, 2, or 3)
+        if enemyTypeRoll <= 4 { // 30% chance t(rolls 1, 2, or 3)
             // --- LITTLE RAT ---
             self.moveSpeed *= 1.5
             self.currentHealth = 60 // Easy to kill
@@ -71,7 +71,7 @@ class EnemyNode: SKSpriteNode {
             self.colorBlendFactor = 0.3
             print("Little Rat spawned!")
             
-        } else if enemyTypeRoll <= 4 { // 10% chance to be a "Big Boy" (rolls 4)
+        } else if enemyTypeRoll <= 5 { // 10% chance to be a "Big Boy" (rolls 4)
             // --- BIG BOY ---
             self.moveSpeed *= 0.5
             self.damage *= 2
