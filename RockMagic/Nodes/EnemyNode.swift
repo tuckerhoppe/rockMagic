@@ -50,7 +50,7 @@ class EnemyNode: SKSpriteNode {
         
         self.positionalOffset = CGFloat.random(in: -15.0...15.0)
         self.name = "enemy"
-        self.zPosition = Constants.ZPositions.enemy
+        self.zPosition = ZPositions.enemy
         
         // Get the current enemy health from the shared manager
         self.maxHealth = GameManager.shared.enemyHealth
@@ -365,20 +365,33 @@ class EnemyNode: SKSpriteNode {
         enemyBody.applyImpulse(finalImpulse)
         
     }
-    
 
-    // Add this new function to launch the enemy from below
-    func launchFromBelow() {
+    // The function now accepts the position of the boulder that is launching it.
+    func launchFromBelow(boulderPosition: CGPoint) {
         // Only launch if not already in the air
         guard currentState != .tossed && currentState != .dying else { return }
         
-        //print("Enemy launched from below!")
-        setAnimationState(to: .tossed)
-        takeDamage(amount: 5) // Apply minimal damage
+        let launchActions = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            
+            self.setAnimationState(to: .tossed)
+            self.takeDamage(amount: 5)
 
-        // Apply a strong vertical impulse
-        let impulse = CGVector(dx: 0, dy: GameManager.shared.launchEnemyFromBelow)
-        physicsBody?.applyImpulse(impulse)
+            // --- THE FIX: Calculate horizontal impulse ---
+            // Determine if the enemy is to the left or right of the boulder's center.
+            let horizontalDirection: CGFloat = (self.position.x < boulderPosition.x) ? -1.0 : 1.0
+            
+            // A small horizontal force to push them away from the center.
+            let horizontalImpulse: CGFloat = GameManager.shared.launchEnemyFromBelowX * horizontalDirection
+            
+            // Apply both the horizontal and vertical impulse.
+            let impulse = CGVector(dx: horizontalImpulse, dy: GameManager.shared.launchEnemyFromBelowY)
+            self.physicsBody?.applyImpulse(impulse)
+        }
+        
+        let waitAction = SKAction.wait(forDuration: 0.2)
+        let sequence = SKAction.sequence([waitAction, launchActions])
+        self.run(sequence)
     }
     
 

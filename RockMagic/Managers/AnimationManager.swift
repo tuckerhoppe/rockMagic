@@ -65,11 +65,71 @@ class AnimationManager {
     
     // In AnimationManager.swift
 
+    /// Returns a pre-loaded animation action without playing it.
+    func getAction(for type: AnimationType) -> SKAction? {
+        return animations[type]
+    }
+    
+    // In AnimationManager.swift
+
+    // In AnimationManager.swift
+    
     // In AnimationManager.swift
 
     // In AnimationManager.swift
 
     func play(animationType: AnimationType, on node: SKSpriteNode) {
+        let locomotionKey = "locomotion"
+        let actionKey = "action"
+        
+        switch animationType {
+        case .idle, .walk:
+            // Only play a walk/idle animation if no other action is currently running.
+            if node.action(forKey: actionKey) == nil {
+                guard let animationAction = animations[animationType] else { return }
+                // Stop the other looping animation before playing the new one.
+                node.removeAction(forKey: locomotionKey)
+                node.run(animationAction, withKey: locomotionKey)
+            }
+            
+        case .quickStrike:
+            // Handle the alternating strike
+            let strikeTexture: SKTexture
+            if useFirstStrikeImage {
+                strikeTexture = SKTexture(imageNamed: "strike")
+            } else {
+                strikeTexture = SKTexture(imageNamed: "strike2thin")
+            }
+            useFirstStrikeImage.toggle()
+            
+            let strikeAction = SKAction.setTexture(strikeTexture, resize: true)
+            let wait = SKAction.wait(forDuration: 0.2) // Hold the frame
+            let sequence = SKAction.sequence([strikeAction, wait])
+            
+            // Stop any looping animation and run the action
+            node.removeAction(forKey: locomotionKey)
+            node.run(sequence, withKey: actionKey)
+
+        case .jump, .summonBoulder, .largeStrike:
+            // This is for all other one-shot animations
+            guard let animationAction = animations[animationType] else { return }
+            var finalAction = animationAction
+            
+            // If it's a single frame, add a wait to give it a visible duration
+            if animationAction.duration == 0 {
+                let wait = SKAction.wait(forDuration: 0.25)
+                finalAction = SKAction.sequence([animationAction, wait])
+            }
+            
+            // Stop any looping animation and run the action
+            node.removeAction(forKey: locomotionKey)
+            node.run(finalAction, withKey: actionKey)
+        }
+    }
+
+    // In AnimationManager.swift
+
+    func playOG(animationType: AnimationType, on node: SKSpriteNode) {
         guard let animationAction = animations[animationType] else { return }
         
         let locomotionKey = "locomotion"

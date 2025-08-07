@@ -114,7 +114,9 @@ class GameManager {
     var boulderBaseKnockback: CGFloat = 30.0
     var boulderVertKnockback: CGFloat = 20.0
     
-    var launchEnemyFromBelow: CGFloat = 145.0
+    var launchEnemyFromBelowX: CGFloat = 45.0
+    var launchEnemyFromBelowY: CGFloat = 45.0
+    var playerJumpHeight: CGFloat = 50.0
     
     // --- Difficulty Progression ---
     private var gameTime: TimeInterval = 0

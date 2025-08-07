@@ -33,7 +33,13 @@ class CollisionManager {
 //        }
         
         
-
+        // --- ADD THIS NEW BLOCK for Player and Ground Contact ---
+        if firstBody.categoryBitMask == PhysicsCategory.player && secondBody.categoryBitMask == PhysicsCategory.ground {
+            if let player = firstBody.node as? PlayerNode {
+                // When the player touches the ground, they can jump again.
+                player.isGrounded = true
+            }
+        }
         
         
         // --- Enemy and Ground Collision ---

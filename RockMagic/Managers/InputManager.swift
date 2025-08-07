@@ -161,16 +161,24 @@ class InputManager: NSObject, UIGestureRecognizerDelegate {
     }
 
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        //print("TAP")
-        scene.player.playAnimation(.quickStrike) // Play quick strike animation
+        // 1. Get the location of the tap in the view.
+        let locationInView = gesture.location(in: gesture.view)
+        
+        // 2. Convert that location to the scene's coordinate system.
+        let locationInScene = scene.convertPoint(fromView: locationInView)
+        
+        // 3. Determine the direction based on the tap's position.
         var direction: LaunchDirection
-
-        if scene.player.isFacingRight {
+        if locationInScene.x > 0 {
+            // If the tap is on the right half of the screen (x > 0), shoot right.
             direction = .right
         } else {
+            // Otherwise, shoot left.
             direction = .left
         }
         
+        // 4. Play the animation and shoot the rock piece.
+        scene.player.playAnimation(.quickStrike)
         scene.magicManager.shootRockPiece(direction: direction)
     }
 }

@@ -21,6 +21,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var collisionManager: CollisionManager!
     
     private var pauseMenu: PauseMenuNode!
+    
+    // --- WITH THIS NEW STATE PROPERTY ---
+    private var flickState: JoystickFlickState = .neutral
+    private var flickPrimeTime: TimeInterval = 0
 
     
     // --- ADD HEALTH BAR NODES ---
@@ -58,6 +62,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var highlightedBoulder: Boulder?
     
     private var joystickTouch: UITouch?
+    
+    /// Tracks if the joystick was pointing down in the previous frame.
+    private var wasJoystickPointingDown = false
     
     
     override func didMove(to view: SKView) {
@@ -232,6 +239,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let joystickVelocity = joystick.velocity
         
+        // Horizontal Movement & Animation
         if player.action(forKey: "action") == nil {
             if joystickVelocity.dx != 0 {
                 player.playAnimation(.walk)
@@ -241,51 +249,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-        // Handle player and world movement
         if joystickVelocity.dx > 0 { // Moving Right
-            
-            //player.worldPosition.x += playerMoveSpeed
-            
-            if player.position.x < screenBoundaryRight {
-                // Move the player until they reach the boundary
-                player.position.x += playerMoveSpeed
-                
-            } else {
-                // Move the world instead of the player
-                worldNode.position.x -= playerMoveSpeed
-                // --- ADD THIS BLOCK FOR PARALLAX ---
-                // The far background moves at 20% of the world's speed.
-                farBackgroundNode.position.x -= playerMoveSpeed * 0.2
-                
-
-                // The mid background moves at 50% of the world's speed.
-                midBackgroundNode.position.x -= playerMoveSpeed * 0.5
-                //player.worldPosition.x -= playerMoveSpeed
-            }
-//            print("worldPosition", player.worldPosition.x)
-//            print("Actual Position", player.position.x)
+            worldNode.position.x -= playerMoveSpeed
+            farBackgroundNode.position.x -= playerMoveSpeed * 0.2
+            midBackgroundNode.position.x -= playerMoveSpeed * 0.5
         } else if joystickVelocity.dx < 0 { // Moving Left
-            
-            //player.worldPosition.x -= playerMoveSpeed
-            
-            if player.position.x > screenBoundaryLeft {
-                // Move the player until they reach the boundary
-                player.position.x -= playerMoveSpeed
-                //player.worldPosition.x -= playerMoveSpeed
-            } else {
-                // Move the world instead of the player
-                worldNode.position.x += playerMoveSpeed
-                //player.worldPosition.x += playerMoveSpeed
-                // --- ADD THIS BLOCK FOR PARALLAX ---
-                // The far background moves at 20% of the world's speed.
-                farBackgroundNode.position.x += playerMoveSpeed * 0.2
-
-                // The mid background moves at 50% of the world's speed.
-                midBackgroundNode.position.x += playerMoveSpeed * 0.5
-            }
-//            print("worldPosition", player.worldPosition.x)
-//            print("Actual Position", player.position.x)
+            worldNode.position.x += playerMoveSpeed
+            farBackgroundNode.position.x += playerMoveSpeed * 0.2
+            midBackgroundNode.position.x += playerMoveSpeed * 0.5
         }
+        
+        // --- REVISED Vertical (Jump) Movement ---
+        let yVelocity = joystickVelocity.dy
+        let verticalThreshold: CGFloat = 0.7
+        // If the joystick is pushed DOWN...
+        if yVelocity < -verticalThreshold {
+            // ...record the current time to "prime" the boulder jump.
+            flickPrimeTime = currentTime
+            
+        }
+        // If the joystick is pushed UP...
+        else if yVelocity > verticalThreshold {
+            // ...check if it was primed recently.
+            // The time window is 0.3 seconds. You can adjust this value.
+            if flickPrimeTime > 0 && currentTime - flickPrimeTime < 0.6 {
+                // If yes, it's a boulder jump.
+                print("BOULDER JUMP")
+                player.boulderJump()
+                // IMPORTANT: Reset the timer immediately to prevent multiple jumps.
+                flickPrimeTime = 0
+            } else {
+                // Otherwise, it's a normal jump.
+                player.jump()
+            }
+        }
+        
         
         player.worldPosition.x = player.position.x - worldNode.position.x
         // Update enemies and managers
@@ -327,7 +325,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //        }
 //    }
     
-    
+    // In GameScene.swift
+
+    // This function now calls the main pullUpBoulder function.
+    func playerDidRequestBoulder(at position: CGPoint) {
+        magicManager.pullUpBoulder(position: position, playAnimation: false)
+    }
     
     // In GameScene.swift
 
@@ -554,4 +557,10 @@ func createWorldCoordinateGrid(worldSize: CGSize, step: Int) -> SKNode {
     // Place it just above the background so it's visible but not intrusive
     gridNode.zPosition = ZPositions.background + 1
     return gridNode
+}
+
+
+enum JoystickFlickState {
+    case neutral
+    case primed // The joystick has been pushed down, ready for a flick up.
 }

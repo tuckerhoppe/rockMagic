@@ -41,7 +41,7 @@ class MagicManager {
     
     // In MagicManager.swift
 
-    func pullUpBoulder(position: CGPoint) {
+    func pullUpBoulder(position: CGPoint, playAnimation: Bool = true) {
         // 1. Define the area where the boulder will appear in the world.
         let offset = position.x - 25
         let spot: CGFloat = setBendingBoundary(locationToCheck: offset)
@@ -49,23 +49,27 @@ class MagicManager {
         let boulderSize = CGSize(width: 50, height: 50)
         let boulderSpawnRect = CGRect(origin: CGPoint(x: spot - boulderSize.width / 2, y: GameManager.shared.boulderFinalY), size: boulderSize)
         
-        player?.playAnimation(.summonBoulder)
-        
-        // 2. Check if the player is in that area.
-        if let player = self.player, let scene = self.scene {
-            //player.playAnimation(.jump)
-            // --- THE FIX: Convert the origin point, then create a new rect ---
-            // First, convert the player's frame's origin from scene-space to world-space.
-            let playerOriginInWorld = scene.worldNode.convert(player.frame.origin, from: scene)
-            // Then, create a new frame in the world's coordinate system.
-            let playerFrameInWorld = CGRect(origin: playerOriginInWorld, size: player.frame.size)
-            
-            if boulderSpawnRect.intersects(playerFrameInWorld) {
-                // If they overlap, launch the player and stop.
-                player.launch(with: CGVector(dx: 0, dy: GameManager.shared.playerBoulderJumpForce))
-                //return // Exit the function early
-            }
+        if playAnimation {
+            player?.playAnimation(.summonBoulder)
         }
+        
+        
+        // NO LONGER AFFECTS PLAYER DIRECTLY
+//        // 2. Check if the player is in that area.
+//        if let player = self.player, let scene = self.scene {
+//            //player.playAnimation(.jump)
+//            // --- THE FIX: Convert the origin point, then create a new rect ---
+//            // First, convert the player's frame's origin from scene-space to world-space.
+//            let playerOriginInWorld = scene.worldNode.convert(player.frame.origin, from: scene)
+//            // Then, create a new frame in the world's coordinate system.
+//            let playerFrameInWorld = CGRect(origin: playerOriginInWorld, size: player.frame.size)
+//            
+//            if boulderSpawnRect.intersects(playerFrameInWorld) {
+//                // If they overlap, launch the player and stop.
+//                player.launch(with: CGVector(dx: 0, dy: GameManager.shared.playerBoulderJumpForce))
+//                //return // Exit the function early
+//            }
+//        }
         
         // 3. Check if any enemies are in that area.
         //var launchedAnEnemy = false
@@ -73,8 +77,8 @@ class MagicManager {
             for enemy in enemies {
                 // An enemy's frame is already in world coordinates.
                 if boulderSpawnRect.intersects(enemy.frame) {
-                    enemy.launchFromBelow()
-                    //launchedAnEnemy = true
+                    let boulderCenter = CGPoint(x: boulderSpawnRect.midX, y: boulderSpawnRect.midY)
+                    enemy.launchFromBelow(boulderPosition: boulderCenter)                    //launchedAnEnemy = true
                 }
             }
         }
@@ -109,6 +113,31 @@ class MagicManager {
         }
         boulders.append(boulder)
         
+    }
+    
+    // In MagicManager.swift
+
+    /// Creates a boulder specifically for the player's boulder jump.
+    /// This version is simpler and doesn't check for collisions.
+    func pullUpBoulderForJump(at position: CGPoint) {
+        let boulder = Boulder()
+        
+        // Use the position passed from the player
+        let finalYPosition: CGFloat = -120
+        let startYPosition: CGFloat = -180
+        boulder.position = CGPoint(x: position.x, y: startYPosition)
+        
+        // Animate it rising from the ground
+        let finalPosition = CGPoint(x: position.x, y: finalYPosition)
+        let moveUpAction = SKAction.move(to: finalPosition, duration: 0.3)
+        boulder.run(moveUpAction)
+        
+        // Add it to the world
+        scene?.worldNode.addChild(boulder)
+        if let scene = scene {
+            boulder.setupJoints(in: scene)
+        }
+        boulders.append(boulder)
     }
     
 //    func pullUpBoulder(position: CGPoint) {

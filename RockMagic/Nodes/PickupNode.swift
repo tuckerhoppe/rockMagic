@@ -34,7 +34,7 @@ class PickupNode: SKSpriteNode {
         
         super.init(texture: texture, color: .clear, size: texture.size())
         
-        self.zPosition = 3
+        self.zPosition = ZPositions.pickups
         self.setScale(0.05)
         setupPhysicsBody()
         

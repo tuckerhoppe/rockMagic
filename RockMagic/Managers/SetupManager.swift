@@ -59,7 +59,7 @@ class SetupManager {
         scene.addChild(scene.midBackgroundNode)
         
         // --- Far Layer (Distant Mountains) ---
-        let farTexture = SKTexture(imageNamed: "greenBackground")
+        let farTexture = SKTexture(imageNamed: "niceGreenBackground")
         // Use many tiles to create a super-wide background that never runs out
         let numberOfFarTiles = 20
         
@@ -73,7 +73,7 @@ class SetupManager {
             
             // Lay the tiles side-by-side
             let tileX = (tile.size.width * CGFloat(i)) - (tile.size.width * CGFloat(numberOfFarTiles) / 2)
-            tile.position = CGPoint(x: tileX, y: 0) // Position near the horizon
+            tile.position = CGPoint(x: tileX, y: 40) // Position near the horizon
             tile.zPosition = ZPositions.background - 2
             scene.farBackgroundNode.addChild(tile)
         }
@@ -120,8 +120,11 @@ class SetupManager {
     
     // EVENTUALLY GO IN A SETUP ENVIORMNT Manager?
     private func setupGround() {
+        // Define your new lighter brown color
+        let lightBrown = UIColor(red: 0.82, green: 0.71, blue: 0.55, alpha: 1.0) // This is a "Tan" color
+
         let groundHeight: CGFloat = GameManager.shared.groundHeight
-        let ground = SKSpriteNode(color: .brown, size: CGSize(width: scene.frame.width * 3, height: groundHeight))
+        let ground = SKSpriteNode(color: lightBrown, size: CGSize(width: scene.frame.width * 3, height: groundHeight))
         //ground.anchorPoint = CGPoint(x: 0.5, y: 1.0) // Sets the anchor to the top-center
         ground.position = CGPoint(x: scene.frame.midX, y: GameManager.shared.groundY)
         ground.zPosition = 1

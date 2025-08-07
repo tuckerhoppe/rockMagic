@@ -19,8 +19,10 @@ class PlayerNode: SKSpriteNode {
     
     // MARK: - State & Movement
     var isFacingRight: Bool = true
+    // --- ADD THIS NEW STATE PROPERTY ---
+    var isGrounded = true
     var isWalking = false
-    let moveSpeed: CGFloat = GameManager.shared.playerMoveSpeed
+    var moveSpeed: CGFloat = GameManager.shared.playerMoveSpeed
 
     // MARK: - Health & Combat
     var maxHealth: Int = GameManager.shared.playerMaxHealth
@@ -46,7 +48,7 @@ class PlayerNode: SKSpriteNode {
         
         // Set initial properties
         self.name = "player" // Useful for identifying in collisions etc.
-        self.zPosition = Constants.ZPositions.player
+        self.zPosition = ZPositions.player
         
         // Create the animation manager
         self.animationManager = AnimationManager()
@@ -80,6 +82,70 @@ class PlayerNode: SKSpriteNode {
         }
     }
     
+    // In PlayerNode.swift
+
+    // --- ADD THESE NEW FUNCTIONS ---
+
+    /// Applies a standard vertical jump impulse.
+    func jump() {
+        // A simple check to prevent air-jumping. If the player is already moving
+        // vertically, don't allow another jump.
+        //guard abs(physicsBody?.velocity.dy ?? 0) < 5 else { return }
+        guard isGrounded else { return }
+        isGrounded = false // Player is now in the air
+        
+        playAnimation(.jump)
+        let jumpForce = GameManager.shared.playerJumpHeight
+        physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpForce))
+    }
+
+    // In PlayerNode.swift
+
+    // In PlayerNode.swift
+
+    // In PlayerNode.swift
+
+    func boulderJump() {
+        // 1. Initial checks
+        guard isGrounded, action(forKey: "action") == nil else { return }
+        isGrounded = false
+        
+        // 2. Get the summon animation
+        guard let summonAnimation = animationManager.getAction(for: .summonBoulder) else { return }
+        
+        // 3. Create an action that summons the boulder.
+        // --- THE FIX: Tell the scene to use the main pullUpBoulder function ---
+        let summonBoulderAction = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            // We pass the player's world position to the scene.
+            (self.scene as? GameScene)?.playerDidRequestBoulder(at: self.worldPosition)
+        }
+        
+        // --- THE FIX: Add a wait action ---
+        // The boulder's rise animation is 0.3s. We'll wait 0.2s so the jump
+        // happens just as the boulder is locking into its final position.
+        let waitAction = SKAction.wait(forDuration: 0.3)
+        
+        // 4. Create an action that performs the jump.
+        let performJumpAction = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            self.playAnimation(.jump)
+            let boulderJumpForce = GameManager.shared.playerJumpHeight * 1.75
+            let horizontalBoost: CGFloat = self.isFacingRight ? 300.0 : -300.0
+            self.physicsBody?.applyImpulse(CGVector(dx: 0, dy: boulderJumpForce))
+        }
+        
+        // 5. Create the final sequence: Animate -> Summon -> Wait -> Jump
+        let sequence = SKAction.sequence([summonAnimation, summonBoulderAction, waitAction, performJumpAction])
+        
+        // 6. Run the sequence
+        self.run(sequence, withKey: "action")
+    }
+    
+    
+    // --- REMOVE THE OLD LAUNCH FUNCTION ---
+    // func launch(with impulse: CGVector) { ... }
+    
     func launch(with impulse: CGVector) {
         self.playAnimation(.jump) // Play the jump animation
         physicsBody?.applyImpulse(impulse)
@@ -97,7 +163,7 @@ class PlayerNode: SKSpriteNode {
 
         // Player
         physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge
-        physicsBody?.contactTestBitMask = PhysicsCategory.enemy | PhysicsCategory.pickup
+        physicsBody?.contactTestBitMask = PhysicsCategory.enemy | PhysicsCategory.pickup | PhysicsCategory.ground
         
     }
     
