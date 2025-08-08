@@ -55,7 +55,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var gameOverMenu: GameOverNode!
     
     // --- 2. DEFINE MOVEMENT PROPERTIES ---
-    private let playerMoveSpeed: CGFloat = 3.0
+    private let playerMoveSpeed: CGFloat = GameManager.shared.playerMoveSpeed
+    private let centerScreenArea: CGFloat = GameManager.shared.centerScreenArea
     private var screenBoundaryLeft: CGFloat!
     private var screenBoundaryRight: CGFloat!
     
@@ -249,15 +250,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
+        
         if joystickVelocity.dx > 0 { // Moving Right
-            worldNode.position.x -= playerMoveSpeed
-            farBackgroundNode.position.x -= playerMoveSpeed * 0.2
-            midBackgroundNode.position.x -= playerMoveSpeed * 0.5
+            //print(player.position.x)
+            player.isWalking = true
+            if player.worldPosition.x < 825 && (player.position.x < centerScreenArea && player.position.x > -centerScreenArea){
+                
+                worldNode.position.x -= playerMoveSpeed
+                farBackgroundNode.position.x -= playerMoveSpeed * 0.2
+                midBackgroundNode.position.x -= playerMoveSpeed * 0.5
+            } else { // On the right edge of the screen
+                player.position.x += playerMoveSpeed
+            }
+            
         } else if joystickVelocity.dx < 0 { // Moving Left
-            worldNode.position.x += playerMoveSpeed
-            farBackgroundNode.position.x += playerMoveSpeed * 0.2
-            midBackgroundNode.position.x += playerMoveSpeed * 0.5
+            player.isWalking = true
+            if player.worldPosition.x > -825 && (player.position.x < centerScreenArea && player.position.x > -centerScreenArea){
+                worldNode.position.x += playerMoveSpeed
+                farBackgroundNode.position.x += playerMoveSpeed * 0.2
+                midBackgroundNode.position.x += playerMoveSpeed * 0.5
+            } else { // On the left edge of the screen
+                player.position.x -= playerMoveSpeed
+            }
+            
+        } else {
+            player.isWalking = false
         }
+        
+        
+        
+        
         
         // --- REVISED Vertical (Jump) Movement ---
         let yVelocity = joystickVelocity.dy

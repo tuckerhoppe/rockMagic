@@ -10,6 +10,7 @@ import SpriteKit
 
 enum EnemyState {
     case idle
+    case attacking
     case walking
     case tossed
     case dying
@@ -24,11 +25,15 @@ class EnemyNode: SKSpriteNode {
     var currentState: EnemyState = .idle
     var idleAction: SKAction!
     var tossedAction: SKAction!
+    var attackAction: SKAction!
     
     let walkFrames = (1...5).map { SKTexture(imageNamed: "badGuyR\($0)") }
     var moveSpeed: CGFloat = GameManager.shared.enemyMoveSpeed
+    var myMoveSpeed: CGFloat = 0.0
     var stoppingDistance: CGFloat = 25.0 // NEW: How close to get before stopping
     var positionalOffset: CGFloat = 0.0
+    
+    private var lastAttackTime: TimeInterval = 0
     
     // --- HEALTH  & DAMAGE PROPERTIES ---
     var maxHealth: Int = 100
@@ -56,6 +61,8 @@ class EnemyNode: SKSpriteNode {
         self.maxHealth = GameManager.shared.enemyHealth
         self.damage = GameManager.shared.enemyDamage
         self.currentHealth = self.maxHealth
+        
+        
         
         // 1. Get the base speed from the GameManager.
         self.moveSpeed = GameManager.shared.enemyMoveSpeed
@@ -94,7 +101,9 @@ class EnemyNode: SKSpriteNode {
 //            self.colorBlendFactor = 0.4
 //            print("Blocker spawned!")
 //        }
-
+        
+        self.myMoveSpeed = moveSpeed
+        
         // Setup
         setupPhysicsBody()
         setupHealthBar() // Call the new setup function
@@ -107,7 +116,7 @@ class EnemyNode: SKSpriteNode {
     
     
     // --- ADD THIS NEW ATTACK FUNCTION ---
-    private func attack(target: PlayerNode) {
+    private func attackOLD(target: PlayerNode) {
         // First, check if the player is still in range to be hit.
         let attackRange: CGFloat = 75.0 // The enemy's reach
         let distance = abs(self.position.x - target.worldPosition.x)
@@ -117,6 +126,30 @@ class EnemyNode: SKSpriteNode {
             target.takeDamage(amount: self.damage)
             
             // Tell the scene to update the health bar
+            if let gameScene = self.scene as? GameScene {
+                gameScene.playerTookDamage()
+            }
+        }
+        
+    }
+    
+    // --- UPDATE THE ATTACK FUNCTION ---
+    private func attack(target: PlayerNode) {
+        // 1. Check if the attack is off cooldown.
+        let currentTime = CACurrentMediaTime()
+        guard currentTime - lastAttackTime > GameManager.shared.enemyAttackCooldown else { return }
+        
+        // 2. Check if the player is still in range.
+        let attackRange = GameManager.shared.enemyAttackRange
+        let distance = abs(self.position.x - target.worldPosition.x)
+        
+        if distance <= attackRange {
+            // 3. If both checks pass, update the timer and deal damage.
+            lastAttackTime = currentTime
+            
+            print("Enemy attacks player!")
+            target.takeDamage(amount: self.damage)
+            
             if let gameScene = self.scene as? GameScene {
                 gameScene.playerTookDamage()
             }
@@ -220,6 +253,8 @@ class EnemyNode: SKSpriteNode {
         // Don't do anything if we're already in this state
         if currentState == newState { return }
         
+        guard let physicsBody = self.physicsBody else { return }
+        
         // Stop any existing animation before starting a new one
         removeAction(forKey: "animation")
         
@@ -230,31 +265,87 @@ class EnemyNode: SKSpriteNode {
                 walkAction = SKAction.repeatForever(SKAction.animate(with: walkFrames, timePerFrame: 0.1, resize: true, restore: false))
             }
             run(walkAction, withKey: "animation")
+            print("walking")
+        case .attacking:
             
-        case .idle:
-            if let attackTarget = target {
-                // --- Attacking Idle ---
-                // A target was provided, so we play the full attack loop.
+            guard let attackTarget = target else { return }
+            
+            // if player is walking
+            if attackTarget.isWalking {
+                // Walking Attack
+                print("attacking!")
+//                
+//                run(sequence, withKey: "animation")
                 let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
-                //let frame2 = SKAction.setTexture(SKTexture(imageNamed: "badGuyLaunched"), resize: true)
                 let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
                 let wait = SKAction.wait(forDuration: 0.25)
                 
                 let runAttack = SKAction.run { [weak self] in
                     self?.attack(target: attackTarget)
                 }
-                let sequence = SKAction.sequence([frame1, wait, frame1, wait, frameAttack, runAttack, wait])
+                let sequence = SKAction.sequence([frame1, wait, frameAttack, runAttack, wait])
                 
-                self.idleAction = SKAction.repeatForever(sequence)
-                run(idleAction, withKey: "animation")
+                self.attackAction = SKAction.repeatForever(sequence)
+                run(attackAction, withKey: "animation")
+                
+                let distance = abs(self.position.x - attackTarget.worldPosition.x)
+                
+                if distance < 30 && self.moveSpeed > 250.0 {
+                    self.moveSpeed = 250.0
+                    print("first one! player MOve speed: ", GameManager.shared.playerMoveSpeed)
+                }
+//                else {
+//                    self.moveSpeed = myMoveSpeed
+//                    print("second one! enemy MOve speed: ",GameManager.shared.enemyMoveSpeed)
+//                }
+                
+                print("move speed: ", self.moveSpeed)
+                walkToTarget(objective: attackTarget)
+                
                 
             } else {
-                // --- Neutral Idle ---
-                // No target was provided. This happens after a toss.
-                // Just stand still on the first frame.
+                // --- Idle Attack (Stationary) ---
+                //print("Enemy performs an idle attack!")
+                
+                physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
+                // This is your existing stationary attack loop.
+                let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
+                let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
+                let wait = SKAction.wait(forDuration: 0.25)
+                
+                let runAttack = SKAction.run { [weak self] in
+                    self?.attack(target: attackTarget)
+                }
+                let sequence = SKAction.sequence([frame1, wait, frameAttack, runAttack, wait])
+                
+                self.attackAction = SKAction.repeatForever(sequence)
+                run(attackAction, withKey: "animation")
+            }
+            
+        case .idle:
+//            if let attackTarget = target {
+//                // --- Attacking Idle ---
+//                // A target was provided, so we play the full attack loop.
+//                let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
+//                //let frame2 = SKAction.setTexture(SKTexture(imageNamed: "badGuyLaunched"), resize: true)
+//                let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
+//                let wait = SKAction.wait(forDuration: 0.25)
+//                
+//                let runAttack = SKAction.run { [weak self] in
+//                    self?.attack(target: attackTarget)
+//                }
+//                let sequence = SKAction.sequence([frame1, wait, frame1, wait, frameAttack, runAttack, wait])
+//                
+//                self.idleAction = SKAction.repeatForever(sequence)
+//                run(idleAction, withKey: "animation")
+//                
+//            } else {
+//                // --- Neutral Idle ---
+//                // No target was provided. This happens after a toss.
+//                // Just stand still on the first frame.
                 self.texture = SKTexture(imageNamed: "badGuyR1")
                 
-            }
+           // }
             
         case .tossed:
             // Lazily creates the action the first time its needed
@@ -272,6 +363,10 @@ class EnemyNode: SKSpriteNode {
         currentState = newState
     }
     
+    func calculateChasingSpeed(input: CGFloat) -> CGFloat {
+        let growthRate: CGFloat = 100.0
+        return 250 * (1 - 1 / (input / growthRate + 1))
+    }
 
 
     // In EnemyNode.swift
@@ -394,6 +489,30 @@ class EnemyNode: SKSpriteNode {
         self.run(sequence)
     }
     
+    
+    // --- REPLACE this function ---
+    func moveTowardsNEW(objective: PlayerNode) {
+        // The "Brain" of the enemy.
+        if currentState == .tossed || currentState == .dying { return }
+        guard let physicsBody = self.physicsBody else { return }
+        
+        let distance = abs(self.position.x - objective.worldPosition.x)
+        
+        // If the player is in range, the enemy's only job is to attack.
+        if distance <= GameManager.shared.enemyAttackRange {
+            setAnimationState(to: .attacking, target: objective)
+            // Stop moving to perform the attack.
+            physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
+            
+            
+        } else {
+            // If the player is out of range, the enemy's only job is to walk.
+            setAnimationState(to: .walking)
+            let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
+            self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
+            physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
+        }
+    }
 
     func moveTowards(objective: PlayerNode) {
         
@@ -404,24 +523,30 @@ class EnemyNode: SKSpriteNode {
         let distance = abs(self.position.x - objective.worldPosition.x)
         // Each enemy now calculates its own unique stopping distance
         let uniqueStoppingDistance = stoppingDistance + positionalOffset // <-- MODIFY THIS LINE
+    
 
         if distance <= uniqueStoppingDistance { // <-- And check against it here
-            // If too close, stop moving and switch to the idle/attack animation
-            setAnimationState(to: .idle, target: objective)
-            physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
+            // If in Range change to the attacking state
+            setAnimationState(to: .attacking, target: objective)
+            //physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
+            //walkToTarget(objective: objective)
             
-        } else {
-            // If far enough away, move towards the player
-            let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
-            
-            self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
-            
+        } else { // When walking...
+            self.moveSpeed = myMoveSpeed
+            walkToTarget(objective: objective)
             // Switch to the walking animation
             setAnimationState(to: .walking)
-            
-            physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
         }
     }
+    
+    func walkToTarget(objective: PlayerNode) {
+        guard let physicsBody = self.physicsBody else { return }
+        let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
+        
+        self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
+        physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
+    }
+    
 
     
     func setupPhysicsBody() {

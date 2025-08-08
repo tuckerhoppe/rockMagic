@@ -25,11 +25,28 @@ class GameManager {
     // =================================================================
     // These define the fundamental feel of the game and rarely change.
     
+    // In GameManager.swift
+
+    // The range at which the enemy will continue walking while attacking.
+    let enemyWalkAttackRange: CGFloat = 125.0
+    // The closer range at which the enemy will stop to attack a stationary player.
+    let enemyStopAttackRange: CGFloat = 75.0
+    
     /// The player's Variables
     let playerMoveSpeed: CGFloat = 3.0
     let playerFriction: CGFloat = 0.5
+    // --- The Computed Properties ---
+    var centerScreenArea: CGFloat {
+        return playerMoveSpeed + 1// 30 points above the ground
+    }
     /// The base vertical force of the player's boulder jump.
     let playerBoulderJumpForce: CGFloat = 100.0
+    
+    // In GameManager.swift
+
+    // Add these under your other static variables
+    let enemyAttackRange: CGFloat = 75.0
+    let enemyAttackCooldown: TimeInterval = 1.5 // Attacks once every 1.5 seconds
     
     /// How far the player can summon a boulder from their position.
     let magicBoundaryDistance: CGFloat = 175.0
@@ -215,9 +232,9 @@ class GameManager {
         timeSinceLastHealthSpawn = 0
         isHealthPickupActive = false
         enemyHealth = 100 // Reset to base value
-        maxEnemyCount = 1 // <-- ADD THIS LINE
+        maxEnemyCount = 10 // 1 <-- ADD THIS LINE
         enemyDamage = 2
         enemySpawnInterval = 3.0
-        enemyMoveSpeed = 100.0
+        enemyMoveSpeed = 250.0 // was 100
     }
 }
