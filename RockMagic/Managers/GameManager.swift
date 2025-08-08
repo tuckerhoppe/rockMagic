@@ -120,10 +120,10 @@ class GameManager {
     //var boulderLaunchForce: CGFloat = 3000.0
     
     /// The base damage of a single, quick-strike rock piece.
-    var rockPieceDamage: Int = 30
+    var rockPieceDamage: Int = 80
     
     /// The base damage of a full boulder impact (can be scaled by size).
-    var fullBoulderDamage: Int = 40
+    var fullBoulderDamage: Int = 60
     var twoThirdBoulderDamage: Int = 30
     var oneThirdBoulderDamage: Int = 25
     
@@ -232,9 +232,9 @@ class GameManager {
         timeSinceLastHealthSpawn = 0
         isHealthPickupActive = false
         enemyHealth = 100 // Reset to base value
-        maxEnemyCount = 10 // 1 <-- ADD THIS LINE
+        maxEnemyCount = 1 // 1 <-- ADD THIS LINE
         enemyDamage = 2
         enemySpawnInterval = 3.0
-        enemyMoveSpeed = 250.0 // was 100
+        enemyMoveSpeed = 100.0 // was 100
     }
 }

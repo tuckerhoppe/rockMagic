@@ -320,33 +320,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             highlightedBoulder = closest
         }
     }
-    
-//    // --- 3. ADJUST THE TOUCH HANDLING ---
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let touch = touches.first else { return }
-//        
-//        // Get the touch location relative to the scene itself
-//        let location = touch.location(in: self)
-//        
-//        // Find what node was tapped
-//        let tappedNode = self.atPoint(location)
-//        
-//        // --- Handle Pause Button Taps ---
-//        if tappedNode.name == "pauseButton" {
-//            pauseGame()
-//        } else if tappedNode.name == "resumeButton" {
-//            resumeGame()
-//        } else if tappedNode.name == "restartButton" {
-//            restartGame()
-//        } else if tappedNode.name == "exitButton" {
-//            exitToMainMenu()
-//        } else if tappedNode.name == "instructionsButton" {
-//            pauseMenu.showInstructions()
-//        } else if tappedNode.name == "backButton" {
-//            pauseMenu.hideInstructions()
-//        }
-//    }
-    
+        
     // In GameScene.swift
 
     // This function now calls the main pullUpBoulder function.

@@ -67,49 +67,8 @@ class Boulder: SKNode {
         fatalError("init(coder:) has not been implemented")
     }
     
-    /// Applies a tiny impulse to separate the boulder from any touching objects.
-    /// This ensures a subsequent launch registers as a new collision.
-    func nudge() {
-        // A very small upward pop is all that's needed.
-        let nudgeImpulse = CGVector(dx: 0, dy: 1.0)
-        self.physicsBody?.applyImpulse(nudgeImpulse)
-    }
-    
-    // In Boulder.swift
 
-    // --- ADD THESE TWO NEW FUNCTIONS ---
 
-    /// Nudges the boulder and then launches all its pieces after a one-frame delay.
-    func launchAllPiecesWithNudge(direction: CGVector) {
-        let nudgeAction = SKAction.run { [weak self] in
-            self?.nudge()
-        }
-        
-        // A tiny delay to wait for the next frame
-        let waitAction = SKAction.wait(forDuration: 0.01)
-        
-        let launchAction = SKAction.run { [weak self] in
-            self?.launchAllRemainingPieces(direction: direction)
-        }
-        
-        // Run the sequence: Nudge -> Wait -> Launch
-        self.run(SKAction.sequence([nudgeAction, waitAction, launchAction]))
-    }
-
-    /// Nudges the boulder and then shoots a single piece after a one-frame delay.
-//    func launchSinglePieceWithNudge(direction: CGVector) {
-//        let nudgeAction = SKAction.run { [weak self] in
-//            self?.nudge()
-//        }
-//        
-//        let waitAction = SKAction.wait(forDuration: 0.01)
-//        
-//        let launchAction = SKAction.run { [weak self] in
-//            self?.launchSinglePiece(direction: direction)
-//        }
-//        
-//        self.run(SKAction.sequence([nudgeAction, waitAction, launchAction]))
-//    }
 
     // 3. Refactor setupJoints to join pieces to the central body
     func setupJoints(in scene: SKScene) {
