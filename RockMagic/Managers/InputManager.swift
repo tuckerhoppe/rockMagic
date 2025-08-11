@@ -9,176 +9,132 @@ import Foundation
 import SpriteKit
 import UIKit
 
-//class InputManager {
-//    unowned let scene: GameScene
-//
-//    init(scene: GameScene, view: SKView) {
-//        self.scene = scene
-//        setupGestures(in: view)
-//    }
-//
-//    private func setupGestures(in view: SKView) {
-//        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-//        swipeUp.direction = .up
-//        view.addGestureRecognizer(swipeUp)
-//
-//        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-//        swipeLeft.direction = .left
-//        view.addGestureRecognizer(swipeLeft)
-//
-//        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-//        swipeRight.direction = .right
-//        view.addGestureRecognizer(swipeRight)
-//
-//        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-//        view.addGestureRecognizer(tap)
-//    }
-//
-//    @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
-//        switch gesture.direction {
-//        case .up:
-//            // 1. Get the touch location in the view's coordinates.
-//            let locationInView = gesture.location(in: gesture.view)
-//            
-//            // 2. Convert the view location to the scene's coordinate system.
-//            let locationInScene = scene.convertPoint(fromView: locationInView)
-//            
-//            // --- THE FIX: Convert the scene location to the worldNode's coordinate system. ---
-//            let locationInWorld = scene.worldNode.convert(locationInScene, from: scene)
-//            
-//            // 4. Pass this final world position to the magic manager.
-//            scene.magicManager.pullUpBoulder(position: locationInWorld)
-//            //print("SWIPE UP at: \(locationInScene)")
-//        case .left:
-//            scene.magicManager.launchBoulder(direction: .left)
-//            scene.player.playAnimation(.largeStrike) // Play large strike animation
-//            //print("SWIPE LEFT")
-//        case .right:
-//            scene.magicManager.launchBoulder(direction: .right)
-//            scene.player.playAnimation(.largeStrike) // Play large strike animation
-//            //print("SWIPE RIGHT")
-//        default:
-//            break
-//        }
-//    }
-//
-//    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-//        //print("TAP")
-//        scene.player.playAnimation(.quickStrike) // Play quick strike animation
-//        var direction: LaunchDirection
-//
-//        if scene.player.isFacingRight {
-//            direction = .right
-//        } else {
-//            direction = .left
-//        }
-//        
-//        scene.magicManager.shootRockPiece(direction: direction)
-//    }
-//}
-
-
 // In InputManager.swift
 
-import UIKit
 import SpriteKit
 
-// Make the class an NSObject and conform to the delegate protocol
-class InputManager: NSObject, UIGestureRecognizerDelegate {
+// An enum to track what the gameplay finger is doing
+enum TouchState {
+    case idle
+    case dragging(boulder: Boulder)
+}
+
+class InputManager {
     unowned let scene: GameScene
-
-    init(scene: GameScene, view: SKView) {
+    
+    // Properties to track the state of the single gameplay touch
+    private var touchState: TouchState = .idle
+    private var startTime: TimeInterval = 0
+    private var startWorldLocation: CGPoint = .zero
+    private var startScreenLocation: CGPoint = .zero
+    
+    init(scene: GameScene) {
         self.scene = scene
-        super.init() // Call the superclass initializer
-        setupGestures(in: view)
-    }
-
-    private func setupGestures(in view: SKView) {
-        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        swipeUp.direction = .up
-        swipeUp.delegate = self // Set the delegate
-        view.addGestureRecognizer(swipeUp)
-
-        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        swipeLeft.direction = .left
-        swipeLeft.delegate = self // Set the delegate
-        view.addGestureRecognizer(swipeLeft)
-
-        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        swipeRight.direction = .right
-        swipeRight.delegate = self // Set the delegate
-        view.addGestureRecognizer(swipeRight)
-
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        tap.delegate = self // Set the delegate
-        view.addGestureRecognizer(tap)
     }
     
-    // --- ADD THIS NEW DELEGATE FUNCTION ---
-    // This function acts as a bouncer for all gestures.
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        // Get the location of the touch
-        let location = touch.location(in: scene)
+    // --- The "Brain" Logic ---
+    
+    func touchesBeganOLD(at worldLocation: CGPoint, screenLocation: CGPoint, timestamp: TimeInterval) {
+        startTime = timestamp
+        startWorldLocation = worldLocation
+        startScreenLocation = screenLocation
         
-        // Calculate the distance from the touch to the center of the joystick
-        let distanceToJoystick = scene.joystick.position.distance(to: location)
-        
-        // If the touch is inside the joystick's activation area, IGNORE the gesture.
-        if distanceToJoystick <= scene.joystick.touchAreaRadius {
-            return false
-        }
-        
-        // Otherwise, allow the gesture to proceed.
-        return true
-    }
-
-    @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
-        switch gesture.direction {
-        case .up:
-            // 1. Get the touch location in the view's coordinates.
-            let locationInView = gesture.location(in: gesture.view)
+        // Check if the touch started on a boulder
+        if let tappedPiece = scene.worldNode.atPoint(worldLocation) as? RockPiece,
+           let boulder = tappedPiece.parentBoulder {
             
-            // 2. Convert the view location to the scene's coordinate system.
-            let locationInScene = scene.convertPoint(fromView: locationInView)
-            
-            // --- THE FIX: Convert the scene location to the worldNode's coordinate system. ---
-            let locationInWorld = scene.worldNode.convert(locationInScene, from: scene)
-            
-            // 4. Pass this final world position to the magic manager.
-            scene.magicManager.pullUpBoulder(position: locationInWorld)
-            //print("SWIPE UP at: \(locationInScene)")
-        case .left:
-            scene.magicManager.launchBoulder(direction: .left)
-            scene.player.playAnimation(.largeStrike) // Play large strike animation
-            //print("SWIPE LEFT")
-        case .right:
-            scene.magicManager.launchBoulder(direction: .right)
-            scene.player.playAnimation(.largeStrike) // Play large strike animation
-            //print("SWIPE RIGHT")
-        default:
-            break
+            // If yes, enter the dragging state
+            touchState = .dragging(boulder: boulder)
+            scene.startDrag(on: boulder, at: worldLocation)
         }
     }
+    
+    // In InputManager.swift
 
-    @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        // 1. Get the location of the tap in the view.
-        let locationInView = gesture.location(in: gesture.view)
+    func touchesBegan(at worldLocation: CGPoint, screenLocation: CGPoint, timestamp: TimeInterval) {
+        startTime = timestamp
+        startWorldLocation = worldLocation
+        startScreenLocation = screenLocation
         
-        // 2. Convert that location to the scene's coordinate system.
-        let locationInScene = scene.convertPoint(fromView: locationInView)
+        // --- THE FIX: The "Magnetic Grab" logic now lives here ---
         
-        // 3. Determine the direction based on the tap's position.
-        var direction: LaunchDirection
-        if locationInScene.x > 0 {
-            // If the tap is on the right half of the screen (x > 0), shoot right.
-            direction = .right
+        // 1. Find the boulder closest to the touch.
+        var closestBoulder: Boulder?
+        var minDistance: CGFloat = .greatestFiniteMagnitude
+        
+        for boulder in scene.magicManager.boulders {
+            if boulder.isBeingHeld { continue }
+            let distance = boulder.position.distance(to: worldLocation)
+            if distance < minDistance {
+                minDistance = distance
+                closestBoulder = boulder
+            }
+        }
+        
+        // 2. If the closest boulder is within the grab radius, start a drag.
+        let grabRadius: CGFloat = GameManager.shared.grabRadius
+        if let boulderToGrab = closestBoulder, minDistance <= grabRadius {
+            touchState = .dragging(boulder: boulderToGrab)
+            scene.startDrag(on: boulderToGrab, at: worldLocation)
         } else {
-            // Otherwise, shoot left.
-            direction = .left
+            // 3. If no boulder was grabbed, the state remains .idle, ready for a tap or swipe.
+            touchState = .idle
+        }
+    }
+    
+    func touchesMoved(to worldLocation: CGPoint) {
+        if case .dragging = touchState {
+            // If we are dragging, tell the scene to update the joint's position
+            scene.updateDrag(at: worldLocation)
+        }
+    }
+    
+    func touchesEnded(at worldLocation: CGPoint, screenLocation: CGPoint, timestamp: TimeInterval) {
+        let duration = timestamp - startTime
+        let distance = startWorldLocation.distance(to: worldLocation)
+        
+        switch touchState {
+        case .dragging(let boulder):
+            // If we were dragging, it's a throw
+            scene.endDrag(on: boulder, at: worldLocation, with: timestamp)
+            
+        case .idle:
+            // If we were not dragging, analyze the gesture
+            if duration < 0.15 && distance < 20 {
+                // It's a TAP
+                handleTap(at: screenLocation)
+            } else if duration < 0.5 && distance > 40 {
+                // It's a SWIPE
+                handleSwipe(from: startWorldLocation, to: worldLocation)
+            }
         }
         
-        // 4. Play the animation and shoot the rock piece.
+        // Reset for the next touch
+        touchState = .idle
+    }
+    
+    // --- Action Handlers ---
+    
+    private func handleTap(at screenLocation: CGPoint) {
+        print("InputManager: Detected Tap")
+        let direction: LaunchDirection = (screenLocation.x > 0) ? .right : .left
         scene.player.playAnimation(.quickStrike)
         scene.magicManager.shootRockPiece(direction: direction)
+    }
+    
+    private func handleSwipe(from start: CGPoint, to end: CGPoint) {
+        print("InputManager: Detected Swipe")
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        
+        if abs(dy) > abs(dx) && dy > 0 {
+            // It's a SWIPE UP
+            scene.magicManager.pullUpBoulder(position: end)
+        } else if abs(dx) > abs(dy) {
+            // It's a SWIPE LEFT/RIGHT
+            let direction: LaunchDirection = (dx > 0) ? .right : .left
+            scene.player.playAnimation(.largeStrike)
+            scene.magicManager.launchBoulder(direction: direction)
+        }
     }
 }

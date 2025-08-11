@@ -9,6 +9,11 @@ import Foundation
 import SpriteKit
 
 class HUDNode: SKNode {
+    // --- Add properties for the stamina bar ---
+    private var staminaBarBackground: SKShapeNode!
+    private var staminaBar: SKShapeNode!
+    private let staminaBarWidth: CGFloat = 150
+    private let staminaBarHeight: CGFloat = 15
 
     // --- Properties ---
     private var healthBarBackground: SKShapeNode!
@@ -25,6 +30,7 @@ class HUDNode: SKNode {
         setupHealthBar(size: sceneSize)
         setupScoreLabel(size: sceneSize)
         setupPauseButton(size: sceneSize)
+        setupStaminaBar(size: sceneSize)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -38,6 +44,42 @@ class HUDNode: SKNode {
         
         // --- ADD THIS CALL ---
         setupPauseButton(size: size)
+    }
+    
+    // --- ADD this new function ---
+    private func setupStaminaBar(size: CGSize) {
+        let container = SKNode()
+        
+        staminaBarBackground = SKShapeNode(rectOf: CGSize(width: staminaBarWidth, height: staminaBarHeight), cornerRadius: 4)
+        staminaBarBackground.fillColor = .darkGray
+        staminaBarBackground.strokeColor = .black
+        staminaBarBackground.lineWidth = 2
+        staminaBarBackground.position = .zero
+        container.addChild(staminaBarBackground)
+
+        staminaBar = SKShapeNode(rectOf: CGSize(width: staminaBarWidth, height: staminaBarHeight), cornerRadius: 4)
+        staminaBar.fillColor = .yellow // Stamina is often yellow
+        staminaBar.strokeColor = .clear
+        staminaBar.position = .zero
+        staminaBar.zPosition = 1
+        staminaBarBackground.addChild(staminaBar)
+        
+        // Position it below the health bar
+        let containerX = -size.width / 2.4 + 75 // Align with health bar
+        let containerY = size.height / 3 - 25   // 25 points below health bar
+        container.position = CGPoint(x: containerX, y: containerY)
+        addChild(container)
+    }
+
+    // This function's signature changes from Int to CGFloat
+    func updateStaminaBar(currentStamina: CGFloat, maxStamina: CGFloat) {
+        let staminaPercentage = currentStamina / maxStamina
+        
+        let scaleAction = SKAction.scaleX(to: staminaPercentage, duration: 0.1)
+        let newXPosition = -((staminaBarWidth * (1 - staminaPercentage)) / 2)
+        let moveAction = SKAction.moveTo(x: newXPosition, duration: 0.1)
+        
+        staminaBar.run(SKAction.group([scaleAction, moveAction]))
     }
 
     // --- Health Bar ---

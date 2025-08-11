@@ -55,7 +55,7 @@ class GameManager {
     
     let launchBoulderForce:CGFloat = 3500.0 // was 3000.
     let quickStrikeForce:CGFloat = 200.0
-    
+    let grabRadius: CGFloat = 50.0
     
     /// Environment height
     // --- The Base Value ---
@@ -120,10 +120,10 @@ class GameManager {
     //var boulderLaunchForce: CGFloat = 3000.0
     
     /// The base damage of a single, quick-strike rock piece.
-    var rockPieceDamage: Int = 30
+    var rockPieceDamage: Int = 80
     
     /// The base damage of a full boulder impact (can be scaled by size).
-    var fullBoulderDamage: Int = 40
+    var fullBoulderDamage: Int = 60
     var twoThirdBoulderDamage: Int = 30
     var oneThirdBoulderDamage: Int = 25
     
@@ -134,6 +134,16 @@ class GameManager {
     var launchEnemyFromBelowX: CGFloat = 45.0
     var launchEnemyFromBelowY: CGFloat = 45.0
     var playerJumpHeight: CGFloat = 50.0
+
+    // --- ADD these under your Upgradable Game Variables ---
+    var playerMaxStamina: Int = 100
+    let summonBoulderCost: Int = 20
+    let launchBoulderCost: Int = 15
+    let shootPieceCost: Int = 5
+    let staminaRegenRate: Int = 10 // Points per second
+    /// The rate at which stamina drains per second while holding a boulder.
+    let boulderHoldStaminaDrainRate: CGFloat = 30.0
+    
     
     // --- Difficulty Progression ---
     private var gameTime: TimeInterval = 0
@@ -232,9 +242,9 @@ class GameManager {
         timeSinceLastHealthSpawn = 0
         isHealthPickupActive = false
         enemyHealth = 100 // Reset to base value
-        maxEnemyCount = 10 // 1 <-- ADD THIS LINE
+        maxEnemyCount = 1 // 1 <-- ADD THIS LINE
         enemyDamage = 2
         enemySpawnInterval = 3.0
-        enemyMoveSpeed = 250.0 // was 100
+        enemyMoveSpeed = 100.0 // was 100
     }
 }

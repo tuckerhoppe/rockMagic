@@ -22,6 +22,7 @@ struct PhysicsCategory {
     static let edge: UInt32      = 0b1000000// 64 (Was conflicting with ground)
     static let boulder: UInt32   = 0b10000000   // 128
     static let pickup: UInt32    = 0b100000000  // 256
+    static let anchor: UInt32    = 0b1000000000 // 512
     static let all: UInt32       = UInt32.max
 }
 
