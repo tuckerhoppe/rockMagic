@@ -19,7 +19,7 @@ class MagicManager {
     private weak var player: PlayerNode?
     private var enemiesManager: EnemiesManager?
     private var currentBoulder: Boulder?
-    private var boulders: [Boulder] = []
+    var boulders: [Boulder] = []
     
     var magicBoundDistance: CGFloat = GameManager.shared.magicBoundaryDistance
     
@@ -42,6 +42,11 @@ class MagicManager {
     // In MagicManager.swift
 
     func pullUpBoulder(position: CGPoint, playAnimation: Bool = true) {
+        // Check for stamina before doing anything
+        guard let player = player, player.useStamina(cost: GameManager.shared.summonBoulderCost) else {
+            print("Not enough stamina to summon!")
+            return
+        }
         // 1. Define the area where the boulder will appear in the world.
         let offset = position.x - 25
         let spot: CGFloat = setBendingBoundary(locationToCheck: offset)
@@ -50,7 +55,7 @@ class MagicManager {
         let boulderSpawnRect = CGRect(origin: CGPoint(x: spot - boulderSize.width / 2, y: GameManager.shared.boulderFinalY), size: boulderSize)
         
         if playAnimation {
-            player?.playAnimation(.summonBoulder)
+            player.playAnimation(.summonBoulder)
         }
         
         
@@ -90,6 +95,7 @@ class MagicManager {
 
         // 4. If nothing was in the way, create the boulder as usual.
         let boulder = Boulder()
+        //boulder.gameScene = self.scene
 
         // Define the start and end points for the animation
         let finalYPosition: CGFloat = GameManager.shared.boulderFinalY
@@ -110,6 +116,7 @@ class MagicManager {
         scene?.worldNode.addChild(boulder)
         if let scene = scene {
             boulder.setupJoints(in: scene)
+            //boulder.setupJoints()
         }
         boulders.append(boulder)
         
@@ -136,26 +143,12 @@ class MagicManager {
         scene?.worldNode.addChild(boulder)
         if let scene = scene {
             boulder.setupJoints(in: scene)
+
         }
         boulders.append(boulder)
     }
     
-//    func pullUpBoulder(position: CGPoint) {
-//        // puts the center of the boulder at the point of swipe
-//        let offset = position.x - 25
-//        let spot: CGFloat = setBendingBoundary(locationToCheck: offset)
-//        
-//        let spawnY: CGFloat = -120.0
-//        let boulder = Boulder()
-//        if let player = player {
-//            boulder.position = CGPoint(x: spot, y: spawnY)
-//        }
-//        scene?.worldNode.addChild(boulder)
-//        if let scene = scene {
-//            boulder.setupJoints(in: scene)
-//        }
-//        boulders.append(boulder)
-//    }
+
     
     
     
@@ -208,7 +201,7 @@ class MagicManager {
      func closestBoulder() -> Boulder? {
         guard let player = player else { return nil }
 
-        let activeBoulders = boulders.filter { !$0.isDepleted }
+         let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld }
 
         return activeBoulders.min(by: {
             $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
@@ -236,6 +229,11 @@ class MagicManager {
     // In MagicManager.swift
 
     func launchBoulder(direction: LaunchDirection) {
+        // Check for stamina
+        guard let player = player, player.useStamina(cost: GameManager.shared.launchBoulderCost) else {
+            print("Not enough stamina to launch!")
+            return
+        }
         currentBoulder = closestBoulder()
         guard let boulderToLaunch = currentBoulder else { return }
         
@@ -268,6 +266,7 @@ class MagicManager {
                 if enemy.frame.intersects(launchHitbox) {
                     // 3. If an enemy is there, hit them directly, BYPASSING the velocity check.
                     enemy.getTossed(by: representativePiece, bypassVelocityCheck: true)
+                    print("Bypassed!")
                 }
             }
         }
@@ -288,6 +287,12 @@ class MagicManager {
     }
 
     func shootRockPiece(direction: LaunchDirection) {
+        // Check for stamina
+        guard let player = player, player.useStamina(cost: GameManager.shared.shootPieceCost) else {
+            print("Not enough stamina to shoot!")
+            return
+        }
+        
         currentBoulder = closestBoulder()
         guard let boulderToShoot = currentBoulder, let topPiece = boulderToShoot.pieces.last(where: { $0.isAttached }) else { return }
         

@@ -19,6 +19,11 @@ class Boulder: SKNode {
     var joints: [SKPhysicsJoint] = []
     private var highlightNode: SKShapeNode?
     var isBraking: Bool = true
+    
+    /// True if the player is currently dragging this boulder
+    var isBeingHeld: Bool = false
+    
+    
 
     override init() {
         super.init()
@@ -66,8 +71,6 @@ class Boulder: SKNode {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-
 
 
     // 3. Refactor setupJoints to join pieces to the central body

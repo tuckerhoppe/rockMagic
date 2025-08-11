@@ -25,6 +25,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // --- WITH THIS NEW STATE PROPERTY ---
     private var flickState: JoystickFlickState = .neutral
     private var flickPrimeTime: TimeInterval = 0
+    
+    
+    // --- Add this new property ---
+    private var gameplayTouch: UITouch?
+    
+    // --- ADD THESE NEW PROPERTIES for dragging ---
+    private var draggedBoulder: Boulder?
+    // This node is an invisible "hand" that we will move with the player's finger.
+    private var touchAnchorNode: SKNode?
+    // The joint is now a generic SKPhysicsJoint.
+    private var touchJoint: SKPhysicsJoint?
+    private var lastTouchTimestamp: TimeInterval = 0
+    private var lastTouchLocation: CGPoint = .zero
 
     
     // --- ADD HEALTH BAR NODES ---
@@ -67,6 +80,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Tracks if the joystick was pointing down in the previous frame.
     private var wasJoystickPointingDown = false
     
+    var testWorldNode: SKNode!
     
     override func didMove(to view: SKView) {
         backgroundColor = .cyan
@@ -90,6 +104,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // 2. Create the grid and add it to the worldNode so it scrolls
         let worldGrid = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
         worldNode.addChild(worldGrid)
+        
+        testWorldNode = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
+        addChild(testWorldNode) // Add it directly to the scene
         
         
         hud = HUDNode(sceneSize: view.bounds.size)
@@ -158,71 +175,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         worldNode.addChild(shape) // Add it to the world so it scrolls correctly
     }
     
-//    override func update(_ currentTime: TimeInterval) {
-//        player.updateMovement(joystickVelocity: joystick.velocity)
-//        //updateEnemies(enemies: enemies)
-//        enemiesManager.updateEnemies(target: player)
-//        magicManager.update()
-//        
-//        // --- MANAGE THE HIGHLIGHT ---
-//        let closest = magicManager.closestBoulder()
-//
-//        if closest !== highlightedBoulder {
-//            highlightedBoulder?.setHighlight(active: false)
-//            // Highlight the new one
-//            closest?.setHighlight(active: true)
-//            // Update our tracker
-//            highlightedBoulder = closest
-//        }
-//        for node in self.children {
-//            
-//            if let rock = node as? RockPiece {
-//                rock.update()
-//            }
-//        }
-//
-//    }
-    
-    // In GameScene.swift
-
-//    private func setupPlayerHealthBar() {
-//        // Create the background bar
-//        playerHealthBarBackground = SKShapeNode(rectOf: CGSize(width: healthBarWidth, height: healthBarHeight), cornerRadius: 5)
-//        playerHealthBarBackground.fillColor = .darkGray
-//        playerHealthBarBackground.strokeColor = .black
-//        playerHealthBarBackground.lineWidth = 2
-//        
-//        // --- THE FIX: A more reliable way to position the health bar ---
-//        // Start from the top-left corner of the visible frame and add some padding.
-//        let xPos = self.frame.minX + healthBarWidth/2 + 20 // 20 points of padding from the left
-//        let yPos = self.frame.minY - healthBarHeight/2 - 20 // 20 points of padding from the top
-//        print(xPos)
-//        print(yPos)
-//        playerHealthBarBackground.position = CGPoint(x: 0, y: 0)
-//        // -------------------------------------------------------------
-//        
-//        playerHealthBarBackground.zPosition = ZPositions.hud
-//        addChild(playerHealthBarBackground) // Add to scene, NOT worldNode
-//
-//        // Create the foreground bar
-//        playerHealthBar = SKShapeNode(rectOf: CGSize(width: healthBarWidth, height: healthBarHeight), cornerRadius: 5)
-//        playerHealthBar.fillColor = .green
-//        playerHealthBar.strokeColor = .clear
-//        playerHealthBar.position = .zero
-//        playerHealthBar.zPosition = playerHealthBarBackground.zPosition + 1
-//        playerHealthBarBackground.addChild(playerHealthBar)
-//    }
-//    
-//    // --- ADD HEALTH BAR UPDATE FUNCTION ---
-//    func updatePlayerHealthBar() {
-//        let healthPercentage = CGFloat(player.currentHealth) / CGFloat(player.maxHealth)
-//        
-//        let scaleAction = SKAction.scaleX(to: healthPercentage, duration: 0.2)
-//        let newXPosition = -((healthBarWidth * (1 - healthPercentage)) / 2)
-//        let moveAction = SKAction.moveTo(x: newXPosition, duration: 0.2)
-//        
-//        playerHealthBar.run(SKAction.group([scaleAction, moveAction]))
-//    }
     
     // --- 4. NEW MOVEMENT LOGIC IN UPDATE ---
     override func update(_ currentTime: TimeInterval) {
@@ -238,7 +190,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Update the shared GameManager instance
         GameManager.shared.update(deltaTime: deltaTime)
         
+        // --- ADD THIS BLOCK to handle stamina drain during drag ---
+        if let _ = draggedBoulder {
+            let hasStamina = player.drainStamina(deltaTime: deltaTime)
+            if !hasStamina {
+                // If the player runs out of stamina, force them to drop the boulder.
+                forceDropBoulder()
+            }
+        }
+        
         let joystickVelocity = joystick.velocity
+        
+        // --- ADD THIS LINE ---
+        player.regenerateStamina(deltaTime: deltaTime)
+        
         
         // Horizontal Movement & Animation
         if player.action(forKey: "action") == nil {
@@ -255,6 +220,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             //print(player.position.x)
             player.isWalking = true
             if player.worldPosition.x < 825 && (player.position.x < centerScreenArea && player.position.x > -centerScreenArea){
+                // FOR DEBUGGING
+                testWorldNode.position.x -= playerMoveSpeed
                 
                 worldNode.position.x -= playerMoveSpeed
                 farBackgroundNode.position.x -= playerMoveSpeed * 0.2
@@ -266,6 +233,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         } else if joystickVelocity.dx < 0 { // Moving Left
             player.isWalking = true
             if player.worldPosition.x > -825 && (player.position.x < centerScreenArea && player.position.x > -centerScreenArea){
+                // FOR DEBUGGING
+                testWorldNode.position.x += playerMoveSpeed
+                
                 worldNode.position.x += playerMoveSpeed
                 farBackgroundNode.position.x += playerMoveSpeed * 0.2
                 midBackgroundNode.position.x += playerMoveSpeed * 0.5
@@ -320,6 +290,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             highlightedBoulder = closest
         }
     }
+    
+    // --- ADD this new callback function ---
+    func playerUsedStamina() {
+        hud.updateStaminaBar(currentStamina: CGFloat(player.currentStamina), maxStamina: CGFloat(player.maxStamina))
+    }
         
     // In GameScene.swift
 
@@ -336,58 +311,184 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for touch in touches {
             let location = touch.location(in: self)
             
-            // --- THE FIX: Check distance to joystick, not frame ---
-            // Calculate the distance from the touch to the center of the joystick.
+            // --- THE FIX: Check distance to the joystick's position ---
             let distanceToJoystick = joystick.position.distance(to: location)
             
-            // If the touch is within the joystick's larger activation radius...
             if distanceToJoystick <= joystick.touchAreaRadius && joystickTouch == nil {
-                // ...claim this touch for the joystick.
                 joystickTouch = touch
                 joystick.update(at: touch.location(in: joystick))
-                return // Stop processing other touches
+                continue
             }
-        }
-        
-        // If the touch wasn't for the joystick, check for menu buttons.
-        guard let touch = touches.first else { return }
-        let tappedNode = self.atPoint(touch.location(in: self))
-        
-        if tappedNode.name == "pauseButton" {
-            pauseGame()
-        } else if tappedNode.name == "resumeButton" {
-            resumeGame()
-        } else if tappedNode.name == "restartButton" {
-            restartGame()
-        } else if tappedNode.name == "exitButton" {
-            exitToMainMenu()
-        } else if tappedNode.name == "instructionsButton" {
-            pauseMenu.showInstructions()
-        } else if tappedNode.name == "backButton" {
-            pauseMenu.hideInstructions()
+    
+            
+            
+            
+            // 2. Check for menu buttons.
+            let tappedNode = self.atPoint(location)
+            if tappedNode.name != nil && tappedNode.name != "ground" {
+                if tappedNode.name == "pauseButton" {
+                    pauseGame()
+                } else if tappedNode.name == "resumeButton" {
+                    resumeGame()
+                } else if tappedNode.name == "restartButton" {
+                    restartGame()
+                } else if tappedNode.name == "exitButton" {
+                    exitToMainMenu()
+                } else if tappedNode.name == "instructionsButton" {
+                    pauseMenu.showInstructions()
+                } else if tappedNode.name == "backButton" {
+                    pauseMenu.hideInstructions()
+                }
+            }
+            
+            // 3. If it's not for the joystick or a menu, it's a gameplay touch.
+            if gameplayTouch == nil {
+                gameplayTouch = touch
+                let locationInWorld = touch.location(in: worldNode)
+                let locationInScene = touch.location(in: self)
+                inputManager.touchesBegan(at: locationInWorld, screenLocation: locationInScene, timestamp: touch.timestamp)
+            }
+            
         }
     }
 
+    // In GameScene.swift
+
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // If we are tracking a touch for the joystick, update it.
-        if let touch = joystickTouch {
-            joystick.update(at: touch.location(in: joystick))
+        for touch in touches {
+            if touch == joystickTouch {
+                joystick.update(at: touch.location(in: joystick))
+            } else if touch == gameplayTouch {
+                inputManager.touchesMoved(to: touch.location(in: worldNode))
+            }
         }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // If the touch that was lifted is the one controlling the joystick, reset it.
-        if let touch = joystickTouch, touches.contains(touch) {
-            joystick.reset()
-            joystickTouch = nil // Stop tracking
+        for touch in touches {
+            if touch == joystickTouch {
+                joystick.reset()
+                joystickTouch = nil
+            } else if touch == gameplayTouch {
+                let locationInWorld = touch.location(in: worldNode)
+                let locationInScene = touch.location(in: self)
+                inputManager.touchesEnded(at: locationInWorld, screenLocation: locationInScene, timestamp: touch.timestamp)
+                gameplayTouch = nil
+            }
         }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // This handles cases like an incoming phone call.
-        if let touch = joystickTouch, touches.contains(touch) {
-            joystick.reset()
-            joystickTouch = nil
+        // This function can be simplified to handle both cases
+        touchesEnded(touches, with: event)
+    }
+    
+    // In GameScene.swift
+
+    // --- ADD THESE THREE NEW HELPER FUNCTIONS ---
+    
+
+    // In GameScene.swift
+
+    func startDrag(on boulder: Boulder, at location: CGPoint) {
+        
+        
+        let shape = SKShapeNode(circleOfRadius: 10)
+        shape.fillColor = .blue
+        shape.strokeColor = .clear
+        shape.zPosition = ZPositions.hud + 1 // Ensure it's drawn on top
+        
+        // Assign this new shape to your existing touchAnchorNode property
+        touchAnchorNode = shape
+        
+        
+        // 1. Create the invisible "hand" (touchAnchorNode) IN THE WORLD.
+        //touchAnchorNode = SKNode()
+        touchAnchorNode?.position = location
+        // --- THE FIX: Correct the typo here ---
+        touchAnchorNode?.physicsBody = SKPhysicsBody(circleOfRadius: 1)
+        touchAnchorNode?.physicsBody?.isDynamic = false
+        
+        // --- ADD THESE TWO LINES ---
+        touchAnchorNode?.physicsBody?.categoryBitMask = PhysicsCategory.anchor
+        touchAnchorNode?.physicsBody?.collisionBitMask = PhysicsCategory.none
+        
+        worldNode.addChild(touchAnchorNode!)
+
+        // 2. Create the joint. Both the boulder and the "hand" are now in the worldNode.
+        let joint = SKPhysicsJointSpring.joint(withBodyA: boulder.physicsBody!,
+                                               bodyB: touchAnchorNode!.physicsBody!,
+                                               anchorA: location,
+                                               anchorB: location)
+        joint.frequency = 8.0
+        joint.damping = 2.0
+
+        self.physicsWorld.add(joint)
+        self.touchJoint = joint
+
+        // 3. Update the boulder's state.
+        boulder.isBeingHeld = true
+        draggedBoulder = boulder
+        startStrengthMeter()
+    }
+
+    func updateDrag(at location: CGPoint) {
+        // The location is already in world space, so we can update the "hand" directly.
+        touchAnchorNode?.position = location
+    }
+
+    func endDrag(on boulder: Boulder, at location: CGPoint, with timestamp: TimeInterval) {
+        guard let joint = touchJoint else { return }
+        
+        // Calculate throw velocity using world coordinates.
+        let timeSinceLastMove = timestamp - lastTouchTimestamp
+        if timeSinceLastMove > 0 {
+            let dx = location.x - lastTouchLocation.x
+            let dy = location.y - lastTouchLocation.y
+            let flickPower: CGFloat = 8.0
+            let velocityX = dx / CGFloat(timeSinceLastMove) * flickPower
+            let velocityY = dy / CGFloat(timeSinceLastMove) * flickPower
+            boulder.physicsBody?.applyImpulse(CGVector(dx: velocityX, dy: velocityY))
+        }
+        
+        // Clean up the joint and the anchor node.
+        self.physicsWorld.remove(joint)
+        touchAnchorNode?.removeFromParent()
+        
+        boulder.isBeingHeld = false
+        draggedBoulder = nil
+        touchJoint = nil
+        touchAnchorNode = nil
+        
+        stopStrengthMeter()
+    }
+    
+    // --- ADD STRENGTH METER FUNCTIONS (logic only for now) ---
+    private func startStrengthMeter() {
+        print("Strength meter started!")
+        // Create a timer that will force-drop the boulder after 3 seconds
+        let wait = SKAction.wait(forDuration: 5.0)
+        let forceDrop = SKAction.run { [weak self] in
+            self?.forceDropBoulder()
+        }
+        self.run(SKAction.sequence([wait, forceDrop]), withKey: "strengthMeter")
+    }
+    
+    private func stopStrengthMeter() {
+        self.removeAction(forKey: "strengthMeter")
+        print("Strength meter stopped.")
+    }
+    
+    private func forceDropBoulder() {
+        if let boulder = draggedBoulder, let joint = touchJoint {
+            print("Held for too long! Dropping boulder.")
+            // Clean up without applying a throw impulse
+            self.physicsWorld.remove(joint)
+            touchAnchorNode?.removeFromParent()
+            boulder.isBeingHeld = false
+            draggedBoulder = nil
+            touchJoint = nil
+            touchAnchorNode = nil
         }
     }
     

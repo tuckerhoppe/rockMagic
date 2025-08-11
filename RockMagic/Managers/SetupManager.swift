@@ -194,7 +194,7 @@ class SetupManager {
     
     
     func setupInput(view: SKView) {
-        scene.inputManager = InputManager(scene: scene, view: view)
+        scene.inputManager = InputManager(scene: scene)
     }
     
 }

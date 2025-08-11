@@ -55,7 +55,7 @@ class GameManager {
     
     let launchBoulderForce:CGFloat = 3500.0 // was 3000.
     let quickStrikeForce:CGFloat = 200.0
-    
+    let grabRadius: CGFloat = 50.0
     
     /// Environment height
     // --- The Base Value ---
@@ -134,6 +134,16 @@ class GameManager {
     var launchEnemyFromBelowX: CGFloat = 45.0
     var launchEnemyFromBelowY: CGFloat = 45.0
     var playerJumpHeight: CGFloat = 50.0
+
+    // --- ADD these under your Upgradable Game Variables ---
+    var playerMaxStamina: Int = 100
+    let summonBoulderCost: Int = 20
+    let launchBoulderCost: Int = 15
+    let shootPieceCost: Int = 5
+    let staminaRegenRate: Int = 10 // Points per second
+    /// The rate at which stamina drains per second while holding a boulder.
+    let boulderHoldStaminaDrainRate: CGFloat = 30.0
+    
     
     // --- Difficulty Progression ---
     private var gameTime: TimeInterval = 0

@@ -28,6 +28,10 @@ class PlayerNode: SKSpriteNode {
     var maxHealth: Int = GameManager.shared.playerMaxHealth
     var currentHealth: Int = 100
     private var isInvulnerable = false
+    
+    // --- CHANGE these properties from Int to CGFloat ---
+    var maxStamina: CGFloat = CGFloat(GameManager.shared.playerMaxStamina)
+    var currentStamina: CGFloat = CGFloat(GameManager.shared.playerMaxStamina)
 
     // MARK: - Animation
     private var animationManager: AnimationManager!
@@ -59,6 +63,48 @@ class PlayerNode: SKSpriteNode {
 
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    // --- ADD this new function ---
+    /// Attempts to use stamina. Returns true if successful, false otherwise.
+    func useStamina(cost: Int) -> Bool {
+        if currentStamina >= CGFloat(cost) {
+            currentStamina -= CGFloat(cost)
+            // Tell the scene to update the HUD
+            (scene as? GameScene)?.playerUsedStamina()
+            return true
+        }
+        // Not enough stamina
+        return false
+    }
+    
+    // In PlayerNode.swift
+
+    /// Drains stamina over time while holding a boulder. Returns false if stamina runs out.
+    func drainStamina(deltaTime: TimeInterval) -> Bool {
+        currentStamina -= GameManager.shared.boulderHoldStaminaDrainRate * CGFloat(deltaTime)
+        (scene as? GameScene)?.playerUsedStamina() // Update the HUD
+
+        if currentStamina <= 0 {
+            currentStamina = 0
+            (scene as? GameScene)?.playerUsedStamina() // Final HUD update
+            print("Stamina depleted!")
+            return false // Out of stamina
+        }
+        return true // Still has stamina
+    }
+
+    // --- ADD this new function ---
+    /// Regenerates stamina over time.
+    func regenerateStamina(deltaTime: TimeInterval) {
+        if currentStamina < maxStamina {
+            // Add a fraction of the regen rate based on the time passed
+            currentStamina += CGFloat(GameManager.shared.staminaRegenRate) * CGFloat(deltaTime)
+            if currentStamina > maxStamina {
+                currentStamina = maxStamina
+            }
+            (scene as? GameScene)?.playerUsedStamina()
+        }
     }
 
     func playAnimation(_ type: AnimationType) {
