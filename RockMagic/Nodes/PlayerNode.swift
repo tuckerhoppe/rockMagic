@@ -31,7 +31,7 @@ class PlayerNode: SKSpriteNode {
     
     // --- CHANGE these properties from Int to CGFloat ---
     var maxStamina: CGFloat = CGFloat(GameManager.shared.playerMaxStamina)
-    var currentStamina: CGFloat = CGFloat(GameManager.shared.playerMaxStamina)
+    var currentStamina: CGFloat =  0 //CGFloat(GameManager.shared.playerMaxStamina)
 
     // MARK: - Animation
     private var animationManager: AnimationManager!
@@ -92,6 +92,19 @@ class PlayerNode: SKSpriteNode {
             return false // Out of stamina
         }
         return true // Still has stamina
+    }
+    
+    // In PlayerNode.swift
+
+    // --- ADD THIS NEW FUNCTION ---
+    /// Restores stamina by a given amount, up to the maximum.
+    func restoreStamina(amount: CGFloat) {
+        currentStamina += amount
+        if currentStamina > maxStamina {
+            currentStamina = maxStamina
+        }
+        // Tell the scene to update the HUD
+        (scene as? GameScene)?.playerUsedStamina()
     }
 
     // --- ADD this new function ---

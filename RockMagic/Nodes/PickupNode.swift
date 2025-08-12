@@ -11,7 +11,10 @@ import SpriteKit
 // An enum to define what the pickup does
 enum PickupType {
     case coin
+    case fiveCoin
     case health
+    case stamina
+    case geode
 }
 
 class PickupNode: SKSpriteNode {
@@ -30,6 +33,17 @@ class PickupNode: SKSpriteNode {
         case .health:
             // Replace "Health_Texture" with your asset name
             texture = SKTexture(imageNamed: "health")
+            
+        case .stamina:
+            texture = SKTexture(imageNamed: "yellowGem")
+            
+        case .fiveCoin:
+            // Replace "Health_Texture" with your asset name
+            texture = SKTexture(imageNamed: "silverFiveCoin")
+            
+        case .geode:
+            texture = SKTexture(imageNamed: "greenGeode")
+            
         }
         
         super.init(texture: texture, color: .clear, size: texture.size())
@@ -39,11 +53,16 @@ class PickupNode: SKSpriteNode {
         setupPhysicsBody()
         
         if type == .coin {
+            self.setScale(0.045)
             // Make the coin pickup disappear after 15 seconds
             let wait = SKAction.wait(forDuration: 15.0)
             let fadeOut = SKAction.fadeOut(withDuration: 0.5)
             let remove = SKAction.removeFromParent()
             run(SKAction.sequence([wait, fadeOut, remove]))
+        }
+        
+        if type == .stamina {
+            self.setScale(0.02)
         }
 }
     

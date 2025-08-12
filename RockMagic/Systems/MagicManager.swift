@@ -43,10 +43,11 @@ class MagicManager {
 
     func pullUpBoulder(position: CGPoint, playAnimation: Bool = true) {
         // Check for stamina before doing anything
-        guard let player = player, player.useStamina(cost: GameManager.shared.summonBoulderCost) else {
-            print("Not enough stamina to summon!")
-            return
-        }
+//        guard let player = player, player.useStamina(cost: GameManager.shared.summonBoulderCost) else {
+//            print("Not enough stamina to summon!")
+//            return
+//        }
+        guard let player = player else { return }
         // 1. Define the area where the boulder will appear in the world.
         let offset = position.x - 25
         let spot: CGFloat = setBendingBoundary(locationToCheck: offset)
@@ -88,13 +89,11 @@ class MagicManager {
             }
         }
         
-//        // If we launched an enemy, don't create a boulder.
-//        if launchedAnEnemy {
-//            return
-//        }
-
-        // 4. If nothing was in the way, create the boulder as usual.
-        let boulder = Boulder()
+        // Give a 1 in 10 chance to spawn a golden boulder.
+        let boulderType: BoulderType = (Int.random(in: 1...3) == 4) ? .golden : .normal
+        
+        // Create the boulder with the chosen type.
+        let boulder = Boulder(type: boulderType)
         //boulder.gameScene = self.scene
 
         // Define the start and end points for the animation
@@ -127,7 +126,8 @@ class MagicManager {
     /// Creates a boulder specifically for the player's boulder jump.
     /// This version is simpler and doesn't check for collisions.
     func pullUpBoulderForJump(at position: CGPoint) {
-        let boulder = Boulder()
+        let boulderType: BoulderType = (Int.random(in: 1...10) == 11) ? .golden : .normal
+        let boulder = Boulder(type: boulderType)
         
         // Use the position passed from the player
         let finalYPosition: CGFloat = -120
@@ -148,6 +148,37 @@ class MagicManager {
         boulders.append(boulder)
     }
     
+    
+    
+    // In MagicManager.swift
+
+    /// Creates a golden boulder directly in front of the player.
+    func pullUpGoldenBoulderAtPlayer() {
+        guard let player = player, let scene = scene else { return }
+        
+        // Check for full stamina before proceeding.
+        guard player.currentStamina >= player.maxStamina else {
+            print("Not enough stamina for golden boulder!")
+            return
+        }
+        
+        // Instantly use all stamina.
+        //player.currentStamina = 0
+        //(scene as? GameScene)?.playerUsedStamina()
+        
+        // Create a golden boulder.
+        let boulder = Boulder(type: .golden)
+        
+        // Position it in front of the player.
+        let direction: CGFloat = player.isFacingRight ? 1 : -1
+        let spawnX = player.worldPosition.x + (50 * direction)
+        boulder.position = CGPoint(x: spawnX, y: GameManager.shared.boulderFinalY)
+        
+        // Add it to the world.
+        scene.worldNode.addChild(boulder)
+        boulder.setupJoints(in: scene)
+        boulders.append(boulder)
+    }
 
     
     
@@ -201,7 +232,7 @@ class MagicManager {
      func closestBoulder() -> Boulder? {
         guard let player = player else { return nil }
 
-         let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld }
+         let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld && $0.type != .golden }
 
         return activeBoulders.min(by: {
             $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
@@ -230,10 +261,10 @@ class MagicManager {
 
     func launchBoulder(direction: LaunchDirection) {
         // Check for stamina
-        guard let player = player, player.useStamina(cost: GameManager.shared.launchBoulderCost) else {
-            print("Not enough stamina to launch!")
-            return
-        }
+//        guard let player = player, player.useStamina(cost: GameManager.shared.launchBoulderCost) else {
+//            print("Not enough stamina to launch!")
+//            return
+//        }
         currentBoulder = closestBoulder()
         guard let boulderToLaunch = currentBoulder else { return }
         
@@ -288,10 +319,11 @@ class MagicManager {
 
     func shootRockPiece(direction: LaunchDirection) {
         // Check for stamina
-        guard let player = player, player.useStamina(cost: GameManager.shared.shootPieceCost) else {
-            print("Not enough stamina to shoot!")
-            return
-        }
+//        guard let player = player, player.useStamina(cost: GameManager.shared.shootPieceCost) else {
+//            print("Not enough stamina to shoot!")
+//            return
+//        }
+        guard let player = player else { return }
         
         currentBoulder = closestBoulder()
         guard let boulderToShoot = currentBoulder, let topPiece = boulderToShoot.pieces.last(where: { $0.isAttached }) else { return }
@@ -354,6 +386,100 @@ class MagicManager {
 
             // Clear the current boulder reference.
             currentBoulder = nil
+        }
+    }
+    
+    /// Safely removes a specific boulder from the internal tracking array.
+    func remove(boulder: Boulder) {
+        boulders.removeAll { $0 === boulder }
+    }
+    
+    // In MagicManager.swift
+
+    /// Launches the nearest boulder in a parabolic arc to a target location for a splash attack.
+    func splashAttack(at targetLocation: CGPoint) {
+        // 1. Find the nearest available boulder.
+        guard let boulder = closestBoulder() else {
+            print("No boulder available for splash attack.")
+            return
+        }
+        
+        // 2. Calculate the path for the parabolic arc.
+        let startPoint = boulder.position
+        // Use the swipe's X, but force the Y to be on the ground.
+        let endPoint = CGPoint(x: targetLocation.x, y: GameManager.shared.groundLevel)
+        
+        // Control the height of the arc
+        let controlPoint = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: startPoint.y + 200)
+        
+        // Create a curved path for the boulder to follow
+        let path = CGMutablePath()
+        path.move(to: startPoint)
+        path.addQuadCurve(to: endPoint, control: controlPoint)
+        
+        // 3. Create the actions for the boulder.
+        let followPath = SKAction.follow(path, asOffset: false, orientToPath: false, duration: 0.7)
+        followPath.timingMode = .easeInEaseOut
+        
+        // This action will run after the boulder lands.
+        let createSplashDamage = SKAction.run { [weak self] in
+            self?.createSplashHitbox(at: endPoint)
+        }
+        
+        // 4. Create the final sequence and run it on the boulder.
+        let sequence = SKAction.sequence([followPath, createSplashDamage])
+        boulder.run(sequence)
+        
+        // 5. Remove the boulder from the tracking array immediately.
+        //boulders.removeAll { $0 === boulder }
+    }
+
+    /// Creates a temporary hitbox to deal splash damage to nearby enemies.
+    private func createSplashHitbox(at location: CGPoint) {
+        guard let enemies = enemiesManager?.enemies else { return }
+        
+        let splashRadius: CGFloat = 100.0
+        // --- ADD THIS BLOCK TO DRAW THE HITBOX ---
+        if let scene = self.scene {
+            let debugCircle = SKShapeNode(circleOfRadius: splashRadius)
+            debugCircle.position = location
+            debugCircle.strokeColor = .red
+            debugCircle.lineWidth = 2
+            debugCircle.zPosition = ZPositions.hud
+
+            let fadeOut = SKAction.fadeOut(withDuration: 1.0)
+            let remove = SKAction.removeFromParent()
+            debugCircle.run(SKAction.sequence([fadeOut, remove]))
+            
+            scene.worldNode.addChild(debugCircle)
+        }
+        // ------------------------------------------
+        
+        for enemy in enemies {
+            let distance = enemy.position.distance(to: location)
+            if distance <= splashRadius {
+                
+                // --- THE FIX: Calculate the vector components manually ---
+                let dx = enemy.position.x - location.x
+                let dy = enemy.position.y - location.y
+                let knockbackDirection = CGVector(dx: dx, dy: dy).normalized()
+                // ----------------------------------------------------
+                
+                let knockbackForce: CGFloat = 100.0
+                let impulse = CGVector(dx: knockbackDirection.dx * knockbackForce, dy: 100)
+                
+                enemy.physicsBody?.applyImpulse(impulse)
+                enemy.takeDamage(amount: 20)
+                
+                enemy.shield = false
+                
+//                // --- THE FIX: We need a rockPiece to pass to getTossed ---
+//                // Create a temporary, invisible rock piece to act as the source of the damage.
+//                let dummyPiece = RockPiece(color: .clear, size: .zero)
+//                
+//                // Call getTossed with the new .splash attack type
+//                enemy.getTossed(by: dummyPiece, bypassVelocityCheck: true, attackType: .splash)
+            }
         }
     }
     

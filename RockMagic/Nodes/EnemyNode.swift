@@ -8,12 +8,24 @@
 import Foundation
 import SpriteKit
 
+
+enum AttackType {
+    case direct // A standard hit from a launched boulder/piece
+    case splash // Damage from a splash attack
+}
 enum EnemyState {
     case idle
     case attacking
     case walking
     case tossed
     case dying
+}
+
+enum EnemyType {
+    case normal
+    case littleRat
+    case bigBoy
+    case blocker
 }
 
 class EnemyNode: SKSpriteNode {
@@ -42,11 +54,15 @@ class EnemyNode: SKSpriteNode {
     var justTossed = false
     var damage: Int = 1
     
+    var shield: Bool = false
+    
     // --- 2. HEALTH BAR NODES ---
     private var healthBarBackground: SKShapeNode!
     private var healthBar: SKShapeNode!
     private let healthBarWidth: CGFloat = 50
     private let healthBarHeight: CGFloat = 6
+    
+    var enemyType: EnemyType = .normal
     
     init() {
         
@@ -71,8 +87,10 @@ class EnemyNode: SKSpriteNode {
 
         if enemyTypeRoll <= 4 { // 30% chance t(rolls 1, 2, or 3)
             // --- LITTLE RAT ---
+            self.enemyType = .littleRat
             self.moveSpeed *= 1.5
-            self.currentHealth = 60 // Easy to kill
+            self.currentHealth /= 2 // Easy to kill
+            self.maxHealth /= 2 // Easy to kill
             self.setScale(0.65)
             self.color = .red
             self.colorBlendFactor = 0.3
@@ -80,6 +98,7 @@ class EnemyNode: SKSpriteNode {
             
         } else if enemyTypeRoll <= 5 { // 10% chance to be a "Big Boy" (rolls 4)
             // --- BIG BOY ---
+            self.enemyType = .bigBoy
             self.moveSpeed *= 0.5
             self.damage *= 2
             self.currentHealth *= 2
@@ -89,18 +108,19 @@ class EnemyNode: SKSpriteNode {
             self.colorBlendFactor = 0.3
             print("Big Boy spawned!")
             
+        } else if enemyTypeRoll <= 7 { // 20% chance
+            // --- ADD THIS NEW BLOCKER TYPE ---
+            self.enemyType = .blocker
+            self.moveSpeed *= 0.75
+            //self.currentHealth *= 2 // Tough to break
+            //self.maxHealth *= 2
+            self.shield = true
+            self.setScale(0.9)
+            self.color = .yellow
+            self.colorBlendFactor = 0.4
+            print("Blocker spawned!")
         }
-//        else if enemyTypeRoll <= 7 { // 20% chance to be a "Blocker" (rolls 6 or 7)
-//            // --- ADD THIS NEW BLOCKER TYPE ---
-//            self.stoppingDistance = 250.0 // Stops far away
-//            self.damage = 0 // Deals no damage
-//            self.currentHealth = 50 // Easy to kill
-//            self.maxHealth = 50
-//            self.moveSpeed *= 1.2 // Moves quickly
-//            self.color = .yellow
-//            self.colorBlendFactor = 0.4
-//            print("Blocker spawned!")
-//        }
+
         
         self.myMoveSpeed = moveSpeed
         
@@ -113,25 +133,33 @@ class EnemyNode: SKSpriteNode {
         fatalError("init(coder:) has not been implemented")
     }
     
-    
+    // The function now accepts the player as a parameter
+    private func performDodge() {
+        print("Little Rat dodged!")
+        // A small hop up and away from the player
+        //let horizontalDirection: CGFloat = (self.position.x < player.worldPosition.x) ? -1.0 : 1.0
+        let impulse = CGVector(dx: 0, dy: 15)
+        physicsBody?.applyImpulse(impulse)
+    }
+
     
     // --- ADD THIS NEW ATTACK FUNCTION ---
-    private func attackOLD(target: PlayerNode) {
-        // First, check if the player is still in range to be hit.
-        let attackRange: CGFloat = 75.0 // The enemy's reach
-        let distance = abs(self.position.x - target.worldPosition.x)
-        
-        if distance <= attackRange {
-            print("Enemy attacks player!")
-            target.takeDamage(amount: self.damage)
-            
-            // Tell the scene to update the health bar
-            if let gameScene = self.scene as? GameScene {
-                gameScene.playerTookDamage()
-            }
-        }
-        
-    }
+//    private func attackOLD(target: PlayerNode) {
+//        // First, check if the player is still in range to be hit.
+//        let attackRange: CGFloat = 75.0 // The enemy's reach
+//        let distance = abs(self.position.x - target.worldPosition.x)
+//        
+//        if distance <= attackRange {
+//            print("Enemy attacks player!")
+//            target.takeDamage(amount: self.damage)
+//            
+//            // Tell the scene to update the health bar
+//            if let gameScene = self.scene as? GameScene {
+//                gameScene.playerTookDamage()
+//            }
+//        }
+//        
+//    }
     
     // --- UPDATE THE ATTACK FUNCTION ---
     private func attack(target: PlayerNode) {
@@ -229,15 +257,27 @@ class EnemyNode: SKSpriteNode {
         self.physicsBody?.isDynamic = false
         self.physicsBody?.categoryBitMask = PhysicsCategory.none
         
-        // --- ADD THIS BLOCK TO DROP A COIN ---
-        // 1. Create a coin pickup
-        let coin = PickupNode(type: .coin)
-        // 2. Position it where the enemy died
-        coin.position = self.position
-        coin.position.y = GameManager.shared.groundLevel + 15
-        // 3. Add it to the world so it scrolls
-        self.parent?.addChild(coin)
+        if self.enemyType == .bigBoy {
+            // If it's a Big Boy, drop a fiveCoin.
+            let coin = PickupNode(type: .fiveCoin)
+            coin.position = self.position
+            coin.position.y = GameManager.shared.groundLevel + 15
+            self.parent?.addChild(coin)
+        } else {
+            // Otherwise, drop a normal coin.
+            let coin = PickupNode(type: .coin)
+            coin.position = self.position
+            coin.position.y = GameManager.shared.groundLevel + 15
+            self.parent?.addChild(coin)
+        }
         
+        // --- ADD THIS BLOCK TO DROP A STAMINA PICKUP ---
+        let staminaPickup = PickupNode(type: .stamina)
+        staminaPickup.position = self.position
+        // Offset it slightly from the coin so they don't overlap
+        staminaPickup.position.x += 30
+        staminaPickup.position.y = GameManager.shared.groundLevel + 15
+        self.parent?.addChild(staminaPickup)
         
         let fadeOut = SKAction.fadeOut(withDuration: 0.5)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.5)
@@ -371,10 +411,33 @@ class EnemyNode: SKSpriteNode {
 
     // In EnemyNode.swift
 
-    func getTossed(by rockPiece: RockPiece, bypassVelocityCheck: Bool = false, isQuickStrike: Bool = false) {
+    func getTossed(by rockPiece: RockPiece, bypassVelocityCheck: Bool = false, isQuickStrike: Bool = false, attackType: AttackType? = .direct) {
         if currentState == .dying { return }
         
         guard let enemyBody = self.physicsBody, let rockBody = rockPiece.physicsBody else { return }
+        
+        
+        
+        // --- Blocker Resistance Logic ---
+        if self.enemyType == .blocker && attackType != .splash && self.shield == true{
+            print("Attack blocked!")
+            // 1. Get the parent boulder from the rock piece that hit.
+            if let boulder = rockPiece.parentBoulder, let boulderBody = boulder.physicsBody {
+                
+                // 1. Determine the direction based on which side the boulder hit from.
+                        let bounceDirection: CGFloat = (boulder.position.x < self.position.x) ? -1.0 : 1.0
+                        
+                        // 2. Define a fixed bounce-back force.
+                        let bounceForce: CGFloat = 2000.0 // You can tune this value
+                        let bounceBackImpulse = CGVector(dx: bounceForce * bounceDirection, dy: 50)
+                        
+                        // 3. Stop the boulder and apply the bounce.
+                        boulderBody.velocity = .zero
+                        boulderBody.applyImpulse(bounceBackImpulse)
+            }
+            // Optionally, play a "clink" sound or particle effect here
+            return // Exit the function, ignoring the attack
+        }
 
 //        let velocityThreshold: CGFloat = 25.0
 //        guard rockBody.velocity.dx.magnitude > velocityThreshold || rockBody.velocity.dy.magnitude > velocityThreshold else {
@@ -382,6 +445,7 @@ class EnemyNode: SKSpriteNode {
 //        }
         
         // If the bypass is false (for normal collisions), perform the velocity check.
+        // bypass is true when an attack is made and the enemy is already touching the boulder
         if !bypassVelocityCheck {
             let velocityThreshold: CGFloat = 25.0
             guard rockBody.velocity.dx.magnitude > velocityThreshold || rockBody.velocity.dy.magnitude > velocityThreshold else {
@@ -390,7 +454,7 @@ class EnemyNode: SKSpriteNode {
         }
         
 
-        setAnimationState(to: .tossed)
+        
         
         // The justTossed flag is still good to have for when the launch works.
         justTossed = true
@@ -402,10 +466,17 @@ class EnemyNode: SKSpriteNode {
 
         let finalImpulse: CGVector
         var damageToDeal = 0
-
+        
+        // STRONG ATTACK
         if rockPiece.isAttached && !isQuickStrike, let boulder = rockPiece.parentBoulder, let boulderBody = boulder.physicsBody {
             let attachedCount = boulder.pieces.filter { $0.isAttached }.count
             
+            if self.enemyType == .littleRat && attackType == .direct && Int.random(in: 1...10) <= 9 {
+                // Pass the player to the dodge function
+                performDodge()
+                return // Exit the function, ignoring the attack
+            }
+            setAnimationState(to: .tossed)
             let powerMultiplier: CGFloat
             switch attachedCount {
             case 3:
@@ -435,10 +506,11 @@ class EnemyNode: SKSpriteNode {
             finalImpulse = CGVector(dx: horizontalImpulse, dy: verticalImpulse)
             boulder.applyBrakes()
 
-        } else {
+        } else { // QUICK ATTACK
             // SINGLE PIECE hit - also needs more force, but less than a full boulder.
             //print("Light attack!")
             damageToDeal = GameManager.shared.rockPieceDamage
+            setAnimationState(to: .tossed)
             
             let basePieceKnockback: CGFloat = GameManager.shared.rockPieceBaseKnockback // Increased from 30
             let rockSizeMultiplier = (rockPiece.size.width * rockPiece.size.height) / 1000.0

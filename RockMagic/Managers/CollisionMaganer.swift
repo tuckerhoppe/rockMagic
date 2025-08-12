@@ -107,6 +107,27 @@ class CollisionManager {
                         // Tell the manager a new one can spawn
                         GameManager.shared.isHealthPickupActive = false
                     }
+                case .stamina:
+                    if player.currentStamina < player.maxStamina {
+                        // Restore 25 stamina points
+                        player.restoreStamina(amount: 25)
+                        pickup.removeFromParent()
+                    }
+                    
+                case .fiveCoin:
+                    (scene as? GameScene)?.addScore(amount: 5)
+                    pickup.removeFromParent()
+                
+                    
+                case .geode:
+                    if player.currentStamina < player.maxStamina {
+                        // Restore 25 stamina points
+                        player.restoreStamina(amount: 100)
+                        pickup.removeFromParent()
+                    }
+
+
+                
                 }
             }
         }

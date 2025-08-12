@@ -140,7 +140,7 @@ class GameManager {
     let summonBoulderCost: Int = 20
     let launchBoulderCost: Int = 15
     let shootPieceCost: Int = 5
-    let staminaRegenRate: Int = 10 // Points per second
+    let staminaRegenRate: Int = 2 // Points per second
     /// The rate at which stamina drains per second while holding a boulder.
     let boulderHoldStaminaDrainRate: CGFloat = 30.0
     
@@ -246,5 +246,6 @@ class GameManager {
         enemyDamage = 2
         enemySpawnInterval = 3.0
         enemyMoveSpeed = 100.0 // was 100
+        
     }
 }

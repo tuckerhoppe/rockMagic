@@ -72,8 +72,9 @@ class InputManager {
         }
         
         // 2. If the closest boulder is within the grab radius, start a drag.
+        
         let grabRadius: CGFloat = GameManager.shared.grabRadius
-        if let boulderToGrab = closestBoulder, minDistance <= grabRadius {
+        if let boulderToGrab = closestBoulder, minDistance <= grabRadius, boulderToGrab.type == .golden {
             touchState = .dragging(boulder: boulderToGrab)
             scene.startDrag(on: boulderToGrab, at: worldLocation)
         } else {
@@ -135,6 +136,11 @@ class InputManager {
             let direction: LaunchDirection = (dx > 0) ? .right : .left
             scene.player.playAnimation(.largeStrike)
             scene.magicManager.launchBoulder(direction: direction)
+        } else if abs(dy) > abs(dx) && dy < 0 {
+            // --- ADD THIS NEW CASE ---
+            // It's a SWIPE DOWN
+            scene.player.playAnimation(.splashAttack)
+            scene.magicManager.splashAttack(at: end)
         }
     }
 }

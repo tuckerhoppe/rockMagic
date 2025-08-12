@@ -10,7 +10,7 @@ import SpriteKit
 
 // An enum to define all possible animations
 enum AnimationType {
-    case idle, walk, jump, summonBoulder, quickStrike, largeStrike
+    case idle, walk, jump, summonBoulder, quickStrike, largeStrike, splashAttack
 }
 
 class AnimationManager {
@@ -61,6 +61,9 @@ class AnimationManager {
         // Large Strike (a single frame)
         let largeStrikeTexture = SKTexture(imageNamed: "Player_LargeStrike")
         animations[.largeStrike] = SKAction.setTexture(largeStrikeTexture,  resize: true)
+        
+        let splashTexture = SKTexture(imageNamed: "kick")
+                animations[.splashAttack] = SKAction.setTexture(splashTexture, resize: true)
     }
     
     // In AnimationManager.swift
@@ -69,14 +72,6 @@ class AnimationManager {
     func getAction(for type: AnimationType) -> SKAction? {
         return animations[type]
     }
-    
-    // In AnimationManager.swift
-
-    // In AnimationManager.swift
-    
-    // In AnimationManager.swift
-
-    // In AnimationManager.swift
 
     func play(animationType: AnimationType, on node: SKSpriteNode) {
         let locomotionKey = "locomotion"
@@ -110,7 +105,7 @@ class AnimationManager {
             node.removeAction(forKey: locomotionKey)
             node.run(sequence, withKey: actionKey)
 
-        case .jump, .summonBoulder, .largeStrike:
+        case .jump, .summonBoulder, .largeStrike, .splashAttack:
             // This is for all other one-shot animations
             guard let animationAction = animations[animationType] else { return }
             var finalAction = animationAction
@@ -160,7 +155,7 @@ class AnimationManager {
             let sequence = SKAction.sequence([strikeAction, wait, idleAction])
             node.run(sequence, withKey: actionKey)
             
-        case .jump, .summonBoulder, .quickStrike, .largeStrike:
+        case .jump, .summonBoulder, .quickStrike, .largeStrike, .splashAttack:
             guard let idleAction = animations[.idle] else { return }
             
             // --- THE FIX: Add a "wait" for single-frame animations ---

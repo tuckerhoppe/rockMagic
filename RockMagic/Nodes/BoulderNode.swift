@@ -11,10 +11,18 @@ import SpriteKit
 
 // In Boulder.swift
 
+enum BoulderType {
+    case normal
+    case golden
+}
+
 import Foundation
 import SpriteKit
 
 class Boulder: SKNode {
+    
+    let type: BoulderType
+
     var pieces: [RockPiece] = []
     var joints: [SKPhysicsJoint] = []
     private var highlightNode: SKShapeNode?
@@ -25,9 +33,11 @@ class Boulder: SKNode {
     
     
 
-    override init() {
+    init(type: BoulderType) {
+        self.type = type
         super.init()
-
+        
+        
         // --- SETUP THE MAIN BOULDER BODY ---
         self.physicsBody = SKPhysicsBody(circleOfRadius: 5)
         self.physicsBody?.isDynamic = true
@@ -65,6 +75,13 @@ class Boulder: SKNode {
             addChild(piece)
             pieces.append(piece)
             increase += 10
+        }
+        
+        // If it's a golden boulder, give it a distinct look.
+        if type == .golden {
+            for piece in pieces {
+                piece.color = .yellow
+            }
         }
     }
 

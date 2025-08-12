@@ -141,8 +141,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hud.updateHealthBar(currentHealth: CGFloat(player.currentHealth), maxHealth: CGFloat(player.maxHealth))
     }
     
+    /// Adds a specified amount to the player's score and updates the HUD.
+    func addScore(amount: Int) {
+        score += amount
+        hud.updateScore(newScore: score)
+    }
+    
     func enemyDefeated() {
-        score += 1
+        addScore(amount: 1)
         hud.updateScore(newScore: score)
     }
     
@@ -294,6 +300,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // --- ADD this new callback function ---
     func playerUsedStamina() {
         hud.updateStaminaBar(currentStamina: CGFloat(player.currentStamina), maxStamina: CGFloat(player.maxStamina))
+        hud.updateGoldenBoulderButton(currentStamina: player.currentStamina, maxStamina: player.maxStamina)
     }
         
     // In GameScene.swift
@@ -338,8 +345,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     pauseMenu.showInstructions()
                 } else if tappedNode.name == "backButton" {
                     pauseMenu.hideInstructions()
+                } else if tappedNode.name == "goldenBoulderButton" {
+                    magicManager.pullUpGoldenBoulderAtPlayer()
                 }
             }
+            
+            
+            
+
             
             // 3. If it's not for the joystick or a menu, it's a gameplay touch.
             if gameplayTouch == nil {
@@ -391,7 +404,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // In GameScene.swift
 
     func startDrag(on boulder: Boulder, at location: CGPoint) {
+        // --- THE FIX: Check for full stamina before starting the drag ---
+        guard player.currentStamina >= player.maxStamina else {
+            print("Not enough stamina to drag the golden boulder!")
+            return // Exit the function; the drag will not start.
+        }
         
+        player.currentStamina -= 20
+        playerUsedStamina() // Update the HUD
         
         let shape = SKShapeNode(circleOfRadius: 10)
         shape.fillColor = .blue
@@ -455,6 +475,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.physicsWorld.remove(joint)
         touchAnchorNode?.removeFromParent()
         
+//        let wait = SKAction.wait(forDuration: 5.0)
+//        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+//        let remove = SKAction.removeFromParent()
+//        boulder.run(SKAction.sequence([wait, fadeOut, remove]))
+        scheduleRemoval(for: boulder)
+        
         boulder.isBeingHeld = false
         draggedBoulder = nil
         touchJoint = nil
@@ -462,12 +488,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         stopStrengthMeter()
     }
+    // In GameScene.swift
+
+    private func scheduleRemoval(for boulder: Boulder) {
+        if boulder.type == .golden {
+            let wait = SKAction.wait(forDuration: 5.0)
+            let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+            let remove = SKAction.removeFromParent()
+            
+            // --- THE FIX: Add a final cleanup step ---
+            // This block of code will run after the boulder is removed from the screen.
+            let cleanupAction = SKAction.run { [weak self] in
+                // Tell the MagicManager to remove the boulder from its list.
+                self?.magicManager.remove(boulder: boulder)
+            }
+            
+            // Add the cleanup action to the end of the sequence.
+            boulder.run(SKAction.sequence([wait, fadeOut, remove, cleanupAction]))
+        }
+    }
     
     // --- ADD STRENGTH METER FUNCTIONS (logic only for now) ---
     private func startStrengthMeter() {
         print("Strength meter started!")
         // Create a timer that will force-drop the boulder after 3 seconds
-        let wait = SKAction.wait(forDuration: 5.0)
+        let wait = SKAction.wait(forDuration: 3.0)
         let forceDrop = SKAction.run { [weak self] in
             self?.forceDropBoulder()
         }
@@ -489,8 +534,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             draggedBoulder = nil
             touchJoint = nil
             touchAnchorNode = nil
+            
+//            let wait = SKAction.wait(forDuration: 3.0)
+//            let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+//            let remove = SKAction.removeFromParent()
+//            boulder.run(SKAction.sequence([wait, fadeOut, remove]))
+            scheduleRemoval(for: boulder)
         }
     }
+
+    
     
     
     // --- ADD NEW GAME STATE FUNCTIONS ---

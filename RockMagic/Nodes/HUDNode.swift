@@ -22,6 +22,7 @@ class HUDNode: SKNode {
     private let healthBarHeight: CGFloat = 20
     
     private var scoreLabel: SKLabelNode!
+    private var goldenBoulderButton: SKSpriteNode!
     
     // --- Initializer ---
     init(sceneSize: CGSize) {
@@ -31,6 +32,7 @@ class HUDNode: SKNode {
         setupScoreLabel(size: sceneSize)
         setupPauseButton(size: sceneSize)
         setupStaminaBar(size: sceneSize)
+        setupGoldenBoulderButton(size: sceneSize)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -80,6 +82,35 @@ class HUDNode: SKNode {
         let moveAction = SKAction.moveTo(x: newXPosition, duration: 0.1)
         
         staminaBar.run(SKAction.group([scaleAction, moveAction]))
+    }
+    
+    // --- ADD THIS NEW FUNCTION ---
+    private func setupGoldenBoulderButton(size: CGSize) {
+        // Replace "Golden_Boulder_Icon" with your asset name
+        goldenBoulderButton = SKSpriteNode(imageNamed: "greenGem")
+        goldenBoulderButton.name = "goldenBoulderButton"
+        goldenBoulderButton.setScale(0.03) // Adjust size as needed
+
+        // Position it to the right of the stamina bar
+        let xPos = -size.width / 2.4 + 250
+        let yPos = size.height / 3 - 25
+        goldenBoulderButton.position = CGPoint(x: xPos, y: yPos)
+        addChild(goldenBoulderButton)
+
+        // Start the button in a disabled state
+        updateGoldenBoulderButton(currentStamina: 0, maxStamina: 100)
+    }
+
+    // --- ADD THIS NEW FUNCTION ---
+    /// Updates the button's appearance based on stamina level.
+    func updateGoldenBoulderButton(currentStamina: CGFloat, maxStamina: CGFloat) {
+        if currentStamina >= maxStamina {
+            // If stamina is full, make the button fully visible and tappable.
+            goldenBoulderButton.alpha = 1.0
+        } else {
+            // If stamina is not full, make it grayed out.
+            goldenBoulderButton.alpha = 0.3
+        }
     }
 
     // --- Health Bar ---
