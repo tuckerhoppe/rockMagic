@@ -17,11 +17,44 @@ class EnemiesManager {
         self.scene = scene
     }
     
+//    func spawnEnemy() {
+//        // Only spawn a new enemy if the current count is less than the max allowed.
+//        guard enemies.count < GameManager.shared.maxEnemyCount else { return }
+//        
+//        let enemy = EnemyNode()
+//
+//        let randomX = CGFloat.random(in: enemy.size.width/2...(scene.size.width - enemy.size.width/2))
+//        enemy.position = CGPoint(x: randomX, y: scene.frame.midY + 100)
+//        enemy.physicsBody?.affectedByGravity = true
+//
+//        scene.worldNode.addChild(enemy)
+//        enemies.append(enemy)
+//        
+//        //print("Enemy spawned at position: \(enemy.position)")
+//    }
+    
+    // In EnemiesManager.swift
+
     func spawnEnemy() {
         // Only spawn a new enemy if the current count is less than the max allowed.
         guard enemies.count < GameManager.shared.maxEnemyCount else { return }
         
-        let enemy = EnemyNode()
+        // --- THE FIX: The random logic now lives here ---
+        // 1. Roll the dice to determine the enemy type.
+        let enemyTypeRoll = Int.random(in: 1...13)
+        var chosenType: EnemyType = .normal
+        
+        if enemyTypeRoll <= 4 {
+            chosenType = .littleRat
+        } else if enemyTypeRoll <= 5 {
+            chosenType = .bigBoy
+        } else if enemyTypeRoll <= 7 {
+            chosenType = .blocker
+        }
+        
+        // 2. Create an enemy of that specific type.
+        let enemy = EnemyNode(type: chosenType)
+        // ---------------------------------------------
 
         let randomX = CGFloat.random(in: enemy.size.width/2...(scene.size.width - enemy.size.width/2))
         enemy.position = CGPoint(x: randomX, y: scene.frame.midY + 100)
@@ -29,11 +62,9 @@ class EnemiesManager {
 
         scene.worldNode.addChild(enemy)
         enemies.append(enemy)
-        
-        //print("Enemy spawned at position: \(enemy.position)")
     }
     
-    func startSpawningEnemies(every interval: TimeInterval = 2.0) {
+    func beginSpawning(every interval: TimeInterval = 2.0) {
         let spawnAction = SKAction.run { [weak self] in
             self?.spawnEnemy()
         }
@@ -42,6 +73,22 @@ class EnemiesManager {
         let sequence = SKAction.sequence([spawnAction, wait])
         let repeating = SKAction.repeatForever(sequence)
         scene.run(repeating, withKey: "spawnEnemies")
+    }
+    
+    /// Spawns a single enemy of a specific type at a random location.
+    /// This function bypasses the normal max enemy count limit.
+    func spawnSingleEnemy(type: EnemyType) {
+        // 1. Create an enemy of the specified type.
+        let enemy = EnemyNode(type: type)
+
+        // 2. Position it at a random spot at the top of the screen.
+        let randomX = CGFloat.random(in: enemy.size.width/2...(scene.size.width - enemy.size.width/2))
+        enemy.position = CGPoint(x: randomX, y: scene.frame.midY + 100)
+        enemy.physicsBody?.affectedByGravity = true
+
+        // 3. Add it to the game world.
+        scene.worldNode.addChild(enemy)
+        enemies.append(enemy)
     }
     
     func updateEnemies(target: SKNode) {

@@ -63,15 +63,26 @@ class CollisionManager {
             if let player = firstBody.node as? PlayerNode,
                let enemy = secondBody.node as? EnemyNode {
                 
-                // Deal damage to the player on contact
-                if enemy.currentState == .dying || enemy.currentState == .tossed { return }
-                player.takeDamage(amount: enemy.damage)
+                let contactDamageCooldown: TimeInterval = 0.5
+                let currentTime = CACurrentMediaTime()
+
+                // 2. Check if the enemy is off cooldown.
+                if currentTime - enemy.lastContactDamageTime > contactDamageCooldown {
+                    // Only deal contact damage if the enemy is not tossed or dying.
+                    if enemy.currentState != .tossed && enemy.currentState != .dying {
+                        
+                        // 3. If yes, deal damage and update the enemy's timer.
+                        enemy.lastContactDamageTime = currentTime
+                        player.takeDamage(amount: enemy.damage)
+                    }
+                }
             }
         }
         
         // Case 1: Enemy hits a RockPiece
         if firstBody.categoryBitMask == PhysicsCategory.enemy && secondBody.categoryBitMask == PhysicsCategory.rockPiece {
             if let enemy = firstBody.node as? EnemyNode, let rockPiece = secondBody.node as? RockPiece {
+                
                 // For a normal collision, we do NOT bypass the velocity check.
                 enemy.getTossed(by: rockPiece, bypassVelocityCheck: false)
                 //rockPiece.removeFromParent()
@@ -97,8 +108,16 @@ class CollisionManager {
                 switch pickup.type {
                 case .coin:
                     // If it's a coin, increase the score
-                    (scene as? GameScene)?.enemyDefeated() // Re-using this function for scoring
+                    (scene as? GameScene)?.addScore(amount: GameManager.shared.normalGemValue, at: pickup.position)
                     pickup.removeFromParent()
+                    
+                    // TUTORIAL CHECK
+                    if self.scene?.currentTutorialStep == .collectGem{
+                        // 3. If yes, complete the step.
+                        self.scene?.completeTutorialStep()
+                    } else if self.scene?.currentTutorialStep == .levelUp {
+                        self.scene?.completeTutorialStep()
+                    }
                     
                 case .health:
                     if player.currentHealth < player.maxHealth {
@@ -106,6 +125,12 @@ class CollisionManager {
                         pickup.removeFromParent()
                         // Tell the manager a new one can spawn
                         GameManager.shared.isHealthPickupActive = false
+                    }
+                    
+                    // TUTORIAL CHECK
+                    if self.scene?.currentTutorialStep == .medPack{
+                        // 3. If yes, complete the step.
+                        self.scene?.completeTutorialStep()
                     }
                 case .stamina:
                     if player.currentStamina < player.maxStamina {
@@ -115,7 +140,7 @@ class CollisionManager {
                     }
                     
                 case .fiveCoin:
-                    (scene as? GameScene)?.addScore(amount: 5)
+                    (scene as? GameScene)?.addScore(amount: GameManager.shared.specialGemValue, at: pickup.position)
                     pickup.removeFromParent()
                 
                     

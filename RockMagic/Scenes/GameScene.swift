@@ -7,6 +7,12 @@
 
 import SpriteKit
 
+protocol GameSceneDelegate: AnyObject {
+    func gameScene(_ scene: GameScene, didRequestHighScoreInputWith score: Int)
+    func gameSceneDidRequestMainMenu(_ scene: GameScene) // <-- ADD THIS
+    func gameSceneDidRestart(_ scene: GameScene)
+}
+
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var player: PlayerNode!
@@ -21,10 +27,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var collisionManager: CollisionManager!
     
     private var pauseMenu: PauseMenuNode!
+    private var upgradeMenu: UpgradeMenuNode!
     
     // --- WITH THIS NEW STATE PROPERTY ---
     private var flickState: JoystickFlickState = .neutral
     private var flickPrimeTime: TimeInterval = 0
+    
+    weak var gameDelegate: GameSceneDelegate?
     
     
     // --- Add this new property ---
@@ -40,17 +49,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var lastTouchLocation: CGPoint = .zero
 
     
-    // --- ADD HEALTH BAR NODES ---
-//    private var playerHealthBarBackground: SKShapeNode!
-//    private var playerHealthBar: SKShapeNode!
-//    private let healthBarWidth: CGFloat = 200
-//    private let healthBarHeight: CGFloat = 20
-//    // This will hold both the label and the health bar
-//    private var healthBarContainer: SKNode!
+
     
     // --- ADD HUD AND SCORE PROPERTIES ---
     private var hud: HUDNode!
-    private var score = 0
+    //private var score = 0
     
     // --- ADD THE CAMERA NODE ---
     //private let cameraNode = SKCameraNode()
@@ -69,7 +72,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // --- 2. DEFINE MOVEMENT PROPERTIES ---
     private let playerMoveSpeed: CGFloat = GameManager.shared.playerMoveSpeed
-    private let centerScreenArea: CGFloat = GameManager.shared.centerScreenArea
+    private let centerScreenAreaR: CGFloat = GameManager.shared.centerScreenAreaR
+    private let centerScreenAreaL: CGFloat = GameManager.shared.centerScreenAreaL
     private var screenBoundaryLeft: CGFloat!
     private var screenBoundaryRight: CGFloat!
     
@@ -82,6 +86,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var testWorldNode: SKNode!
     
+    // --- ADD THESE NEW PROPERTIES ---
+    var currentTutorialStep: TutorialStep = .welcome
+    //private var tutorialImageNode: SKSpriteNode!
+    // --- ADD THESE NEW PROPERTIES ---
+    private var tutorialNode: SKNode!
+    private var titleLabel: SKLabelNode!
+    private var tutorialLabel: SKLabelNode!
+    private var tutorialImage: SKSpriteNode!
+    private var tutorialNextButton: SKLabelNode!
+    // --- ADD THIS NEW PROPERTY ---
+    var isTutorialActive: Bool = true
+
+
+    private var skipButton: SKLabelNode!
+    
     override func didMove(to view: SKView) {
         backgroundColor = .cyan
         GameManager.shared.scene = self // Give the manager a reference to the scene
@@ -90,6 +109,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // --- THE FIX: Use the view's size for the HUD ---
         // Safely unwrap the view to get its dimensions
         guard let view = self.view else { return }
+        
+        // --- ADD THIS LINE ---
+        EffectManager.shared.scene = self
         
         // --- 3. INITIALIZE THE WORLD NODE ---
         worldNode = SKNode()
@@ -103,10 +125,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // 2. Create the grid and add it to the worldNode so it scrolls
         let worldGrid = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
-        worldNode.addChild(worldGrid)
+        //worldNode.addChild(worldGrid)
         
         testWorldNode = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
-        addChild(testWorldNode) // Add it directly to the scene
+        //addChild(testWorldNode) // Add it directly to the scene
         
         
         hud = HUDNode(sceneSize: view.bounds.size)
@@ -132,6 +154,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseMenu.position = CGPoint(x: -5000, y: -5000)
         pauseMenu.zPosition = ZPositions.hud + 10
         addChild(pauseMenu) // Add directly to the scene
+        
+        // --- ADD THIS CALL ---
+        setupTutorial()
+
 
     }
     
@@ -141,29 +167,218 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hud.updateHealthBar(currentHealth: CGFloat(player.currentHealth), maxHealth: CGFloat(player.maxHealth))
     }
     
-    /// Adds a specified amount to the player's score and updates the HUD.
-    func addScore(amount: Int) {
-        score += amount
-        hud.updateScore(newScore: score)
+    // --- ADD this new helper function ---
+    func showFloatingText(text: String, at position: CGPoint) {
+        let label = SKLabelNode(fontNamed: "Menlo-Bold")
+        label.text = text
+        label.fontSize = 20
+        label.fontColor = .white
+        label.position = position
+        label.zPosition = ZPositions.hud
+        
+        let moveUp = SKAction.moveBy(x: 0, y: 50, duration: 1.0)
+        let fadeOut = SKAction.fadeOut(withDuration: 1.0)
+        let remove = SKAction.removeFromParent()
+        
+        label.run(SKAction.group([moveUp, fadeOut]))
+        label.run(SKAction.sequence([.wait(forDuration: 1.0), remove]))
+        worldNode.addChild(label)
+    }
+
+    
+    // --- REPLACE your addScore and enemyDefeated functions with this ---
+    func addScore(amount: Int, at position: CGPoint) {
+        let gm = GameManager.shared
+        let previousLevelScore = gm.scoreForNextLevel - gm.levelThresholdIncrements[min(gm.playerLevel - 1, gm.levelThresholdIncrements.count - 1)]
+
+        gm.currentScore += amount
+        showFloatingText(text: "+\(amount)", at: position)
+        
+        hud.updateScore(newScore: gm.currentScore)
+        hud.updateLevelProgress(currentScore: gm.currentScore, scoreForNextLevel: gm.scoreForNextLevel, previousLevelScore: previousLevelScore)
+        
+        if gm.currentScore >= gm.scoreForNextLevel {
+            levelUp()
+        }
+        
     }
     
-    func enemyDefeated() {
-        addScore(amount: 1)
-        hud.updateScore(newScore: score)
+    
+    private func levelUp() {
+        let gm = GameManager.shared
+        gm.levelUp()
+
+        // 1. Show the "Level Up!" message immediately.
+        hud.showLevelUpMessage()
+        hud.updateLevelLabel(level: gm.playerLevel)
+        
+        // The previous level's score is needed to calculate the progress bar correctly after leveling up.
+        // --- THE FIX: Add the 'min' safety check here ---
+            let prevLevelThresholdIndex = min(max(0, gm.playerLevel - 2), gm.levelThresholdIncrements.count - 1)
+            
+        let previousLevelScore = gm.scoreForNextLevel - gm.levelThresholdIncrements[prevLevelThresholdIndex]
+        hud.updateLevelProgress(currentScore: gm.currentScore, scoreForNextLevel: gm.scoreForNextLevel, previousLevelScore: previousLevelScore)
+
+        // 2. Create a sequence to show the upgrade menu AFTER the message has faded.
+        let wait = SKAction.wait(forDuration: 1.8) // Wait for the "Level Up!" message to finish
+        let showUpgradeMenu = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            
+            self.isPaused = true
+            self.upgradeMenu = UpgradeMenuNode(size: self.size)
+            self.upgradeMenu.zPosition = ZPositions.hud + 30
+            self.addChild(self.upgradeMenu)
+        }
+        
+        // 3. Run the sequence.
+        self.run(SKAction.sequence([wait, showUpgradeMenu]))
     }
+    
+    // --- ADD THIS HELPER FUNCTION ---
+    private func resumeAfterUpgrade() {
+        upgradeMenu.removeFromParent()
+        self.isPaused = false
+        
+        // Also update the player's health to reflect the new max
+        player.maxHealth = GameManager.shared.playerMaxHealth
+        player.currentHealth = player.maxHealth // Full heal on level up
+        playerTookDamage() // Update the HUD
+    }
+ 
+    
     
     // --- ADD THIS NEW FUNCTION ---
-    func showGameOverMenu() {
-        // Pause the game to stop all action
-        self.isPaused = true
-        
-        // Create the menu, passing in the final score
-        gameOverMenu = GameOverNode(size: self.size, score: self.score)
-        gameOverMenu.zPosition = ZPositions.hud + 20 // Ensure it's on top of everything
-        addChild(gameOverMenu)
-    }
+//    func showGameOverMenu() {
+//        // Pause the game to stop all action
+//        self.isPaused = true
+//        
+//        // Create the menu, passing in the final score
+//        gameOverMenu = GameOverNode(size: self.size, score: GameManager.shared.currentScore)
+//        gameOverMenu.zPosition = ZPositions.hud + 20 // Ensure it's on top of everything
+//        addChild(gameOverMenu)
+//    }
     
     // In GameScene.swift
+
+//    func showGameOverMenu() {
+//        // 1. Fetch the current high scores from CloudKit.
+//        CloudKitManager.shared.fetchHighScores { [weak self] (scores, error) in
+//            guard let self = self else { return }
+//            
+//            let highScores = scores ?? []
+//            let lowestScore = highScores.last?.score ?? 0
+//            
+//            // 2. Check if the player's score is a new high score.
+//            if highScores.count < 10 || GameManager.shared.currentScore > lowestScore {
+//                
+//                // --- THE FIX: Use the simple, correct syntax ---
+//                DispatchQueue.main.async {
+//                    if let viewController = self.view?.window?.rootViewController as? GameViewController {
+//                        viewController.promptForPlayerInitials(score: self.score) { initials in
+//                            
+//                            // 4. After the player enters their initials, save the score.
+//                            CloudKitManager.shared.saveHighScore(playerName: initials, score: self.score) { error in
+//                                if let error = error {
+//                                    print("Error saving high score: \(error.localizedDescription)")
+//                                }
+//                                // Finally, show the game over menu.
+//                                self.displayGameOverNode()
+//                            }
+//                        }
+//                    }
+//                }
+//            } else {
+//                // If it's not a high score, just show the game over menu immediately.
+//                self.displayGameOverNode()
+//            }
+//        }
+//    }
+
+    // In GameScene.swift
+
+//    func showGameOverMenu() {
+//        self.displayGameOverNode()
+//        CloudKitManager.shared.fetchHighScores { [weak self] (scores, error) in
+//            guard let self = self else { return }
+//            
+//            let highScores = scores ?? []
+//            let lowestScore = highScores.last?.score ?? 0
+//            
+//            if highScores.count < 10 || GameManager.shared.currentScore > lowestScore {
+//                // --- THE FIX: Just call the delegate ---
+//                // Tell the view controller to handle the pop-up.
+//                self.gameDelegate?.gameScene(self, didRequestHighScoreInputWith: GameManager.shared.currentScore)
+//            } else {
+//                // If it's not a high score, just show the game over menu immediately.
+//                self.displayGameOverNode()
+//            }
+//        }
+//    }
+    
+    // In GameScene.swift
+
+    func showGameOverMenu() {
+        // 1. Immediately display the game over node. This ensures it always appears.
+        self.displayGameOverNode()
+
+        // 2. Separately, check for a high score in the background.
+        CloudKitManager.shared.fetchHighScores { [weak self] (scores, error) in
+            if let error = error {
+                print("CRITICAL ERROR fetching high scores: \(error.localizedDescription)")
+                // If you see this message, the problem is with your CloudKit setup.
+                return
+            }
+            guard let self = self else { return }
+            
+            let highScores = scores ?? []
+            let lowestScore = highScores.last?.score ?? 0
+            let playerScore = GameManager.shared.currentScore
+            
+            // Sort all scores descending
+            let sortedScores = highScores.sorted { $0.score > $1.score }
+
+            // Take the top 10
+            let topTenScores = Array(sortedScores.prefix(5)) // 5 for now
+
+            // Get the lowest score among the top 10
+            let lowestTopTenScore = topTenScores.last?.score ?? 0
+            
+            // --- ADD THIS "BLACK BOX RECORDER" ---
+            print("--- High Score Check ---")
+            print("Player's Score: \(playerScore)")
+            print("Number of High Scores Found: \(highScores.count)")
+            print("Lowest Score on Leaderboard: \(lowestScore)")
+            print("Is player score > lowest score? \(playerScore > lowestScore)")
+            print("Is leaderboard count < 10? \(highScores.count < 10)")
+            // ------------------------------------
+            
+            if highScores.count < 5 || GameManager.shared.currentScore > lowestTopTenScore {
+                print("well at least we made it here!")
+                
+                
+                // If it's a high score, tell the view controller to show the pop-up.
+                // This will now appear ON TOP of the already-visible game over screen.
+                self.gameDelegate?.gameScene(self, didRequestHighScoreInputWith: GameManager.shared.currentScore)
+            }
+        }
+    }
+
+    // Your helper function is still needed
+    func displayGameOverNode() {
+        //guard GameManager.shared.currentScore > 0 else { return }
+        self.isPaused = true
+        gameOverMenu = GameOverNode(size: self.size, score: GameManager.shared.currentScore)
+        
+        gameOverMenu.zPosition = ZPositions.hud + 20
+        addChild(gameOverMenu)
+        print("GAME OVER NODE DISPLAYED")
+    }
+    
+    
+    
+    // In GameScene.swift
+
+    
 
     /// Draws a red rectangle in the world for debugging purposes.
     /// The rectangle will fade out and disappear after 1 second.
@@ -225,7 +440,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if joystickVelocity.dx > 0 { // Moving Right
             //print(player.position.x)
             player.isWalking = true
-            if player.worldPosition.x < 825 && (player.position.x < centerScreenArea && player.position.x > -centerScreenArea){
+            if player.worldPosition.x < 825 && (player.position.x < centerScreenAreaR && player.position.x > centerScreenAreaL){
                 // FOR DEBUGGING
                 testWorldNode.position.x -= playerMoveSpeed
                 
@@ -238,7 +453,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         } else if joystickVelocity.dx < 0 { // Moving Left
             player.isWalking = true
-            if player.worldPosition.x > -825 && (player.position.x < centerScreenArea && player.position.x > -centerScreenArea){
+            if player.worldPosition.x > -825 && (player.position.x < centerScreenAreaR && player.position.x > centerScreenAreaL){
                 // FOR DEBUGGING
                 testWorldNode.position.x += playerMoveSpeed
                 
@@ -295,6 +510,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             closest?.setHighlight(active: true)
             highlightedBoulder = closest
         }
+        
+        // In GameScene.swift, inside the update() function
+
+        // --- ADD THIS BLOCK to check for tutorial actions ---
+        if currentTutorialStep != .complete {
+            switch currentTutorialStep {
+            case .moveRight:
+                if joystick.velocity.dx > 0.5 { completeTutorialStep() }
+            case .jump:
+                if !player.isGrounded { completeTutorialStep() }
+            default:
+                break // Other actions will be handled by the InputManager
+            }
+        }
     }
     
     // --- ADD this new callback function ---
@@ -318,39 +547,93 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for touch in touches {
             let location = touch.location(in: self)
             
-            // --- THE FIX: Check distance to the joystick's position ---
-            let distanceToJoystick = joystick.position.distance(to: location)
-            
-            if distanceToJoystick <= joystick.touchAreaRadius && joystickTouch == nil {
-                joystickTouch = touch
-                joystick.update(at: touch.location(in: joystick))
-                continue
+            if !self.isPaused {
+                // --- Check distance to the joystick's position ---
+                let distanceToJoystick = joystick.position.distance(to: location)
+                if distanceToJoystick <= joystick.touchAreaRadius && joystickTouch == nil {
+                    joystickTouch = touch
+                    joystick.update(at: touch.location(in: joystick))
+                    continue
+                }
             }
+            
     
             
             
             
             // 2. Check for menu buttons.
             let tappedNode = self.atPoint(location)
-            if tappedNode.name != nil && tappedNode.name != "ground" {
-                if tappedNode.name == "pauseButton" {
-                    pauseGame()
-                } else if tappedNode.name == "resumeButton" {
-                    resumeGame()
-                } else if tappedNode.name == "restartButton" {
-                    restartGame()
-                } else if tappedNode.name == "exitButton" {
-                    exitToMainMenu()
-                } else if tappedNode.name == "instructionsButton" {
-                    pauseMenu.showInstructions()
-                } else if tappedNode.name == "backButton" {
-                    pauseMenu.hideInstructions()
-                } else if tappedNode.name == "goldenBoulderButton" {
-                    magicManager.pullUpGoldenBoulderAtPlayer()
-                }
+//            
+            // Check for upgrade card taps first
+            if let cardBackground = tappedNode as? SKShapeNode, let cardName = cardBackground.name as? String {
+                upgradeMenu.selectCard(withName: cardName)
+                print("selecting: \(cardName)")
+                return // The touch has been handled
             }
             
             
+            // In GameScene.swift, inside touchesBegan()
+
+            // --- This is the new logic for handling upgrade card taps ---
+            if let tappedName = tappedNode.name {
+                var upgradeType: UpgradeType?
+                var wasButtonTapped = true // A flag to track if a button was hit
+                
+                switch tappedName {
+                case "confirmButton":
+                    print("clicked on confirm")
+                    if let upgradeName = upgradeMenu.getSelectedUpgradeName() {
+                        // Apply the selected upgrade
+                        var upgradeType: UpgradeType?
+                        if upgradeName == "upgradeHealth" { upgradeType = .health }
+                        else if upgradeName == "upgradeQuickAttack" { upgradeType = .quickAttack }
+                        else if upgradeName == "upgradeStrongAttack" { upgradeType = .strongAttack }
+                        else if upgradeName == "upgradeSplashAttack" { upgradeType = .splashAttack }
+                        else if upgradeName == "upgradeStamina" { upgradeType = .stamina }
+                        else if upgradeName == "upgradeBoulderSize" { upgradeType = .boulderSize }
+                        if let type = upgradeType {
+                            GameManager.shared.applyUpgrade(type)
+                            resumeAfterUpgrade()
+                            print("Upgrade on its way!")
+                        }
+                        print("Sounds like you didn;t pick an upgrade!")
+                        
+                    }
+
+                case "pauseButton": pauseGame()
+                case "resumeButton": resumeGame()
+                case "restartButton": restartGame()
+                case "exitButton": exitToMainMenu()
+                case "instructionsButton": pauseMenu.showInstructions()
+                case "backButton": pauseMenu.hideInstructions()
+                case "viewUpgradesButton": pauseMenu.showUpgrades()
+                case "backToPauseMenuButton": pauseMenu.hideUpgrades()
+                case "goldenBoulderButton": magicManager.pullUpGoldenBoulderAtPlayer()
+                case "tutorialNextButton":
+                    // Only advance if the button is active (cyan).
+                        if tutorialNextButton.fontColor == .cyan {
+                            advanceTutorial()
+                        }
+                case "skipButton":
+                    currentTutorialStep = .complete
+                    isTutorialActive = false // Update the state here too
+                    enemiesManager.beginSpawning() // Tell the enemies to start
+                    tutorialNode.removeFromParent()
+                    skipButton.removeFromParent()
+                default:
+                    wasButtonTapped = false // No known button was tapped
+                }
+                
+                // --- THE FIX: If a button was tapped, consume the touch ---
+                if wasButtonTapped {
+                    continue // Stop processing this touch and move to the next finger.
+                }
+                
+                if let type = upgradeType {
+                    GameManager.shared.applyUpgrade(type)
+                    resumeAfterUpgrade()
+                }
+            }
             
 
             
@@ -558,37 +841,248 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func restartGame() {
-        // Unpause before transitioning to prevent scenes from getting stuck
-        self.isPaused = false
+        self.removeAllActions()
+//        self.removeAllChildren()
         
-        guard let newGameScene = GameScene(fileNamed: "GameScene") else { return }
-        newGameScene.scaleMode = .aspectFill
-        let transition = SKTransition.fade(withDuration: 1.0)
-        view?.presentScene(newGameScene, transition: transition)
-        GameManager.shared.reset()
+        gameOverMenu?.removeFromParent()
+        // Unpause before transitioning to prevent scenes from getting stuck
+        
+        
+//        guard let newGameScene = GameScene(fileNamed: "GameScene") else { return }
+//        newGameScene.scaleMode = .aspectFill
+//        let transition = SKTransition.fade(withDuration: 1.0)
+//        view?.presentScene(newGameScene, transition: transition)
+//        GameManager.shared.reset()
+        
+        if let newGameScene = GameScene(fileNamed: "GameScene") {
+            newGameScene.scaleMode = .aspectFill
+            newGameScene.gameDelegate = self.gameDelegate
+
+            let transition = SKTransition.fade(withDuration: 1.0)
+            view?.presentScene(newGameScene, transition: transition)
+
+            GameManager.shared.reset()
+            
+            // 👇 tell the delegate we restarted
+            gameDelegate?.gameSceneDidRestart(newGameScene)
+        }
+        self.isPaused = false
+
     }
     
     private func exitToMainMenu() {
-        self.isPaused = false
+        
         
         // --- THE FIX: Use the view's size ---
         // 1. Safely unwrap the view, because it's an optional.
-        guard let view = self.view else { return }
+//        guard let view = self.view else { return }
+//        
+//        // 2. Create the new scene using the view's bounds size.
+//        let mainMenu = MainMenuScene(size: view.bounds.size)
+//        // ------------------------------------
+//        
+//        mainMenu.scaleMode = .aspectFill
+//        let transition = SKTransition.fade(withDuration: 1.0)
+//        view.presentScene(mainMenu, transition: transition)
         
-        // 2. Create the new scene using the view's bounds size.
-        let mainMenu = MainMenuScene(size: view.bounds.size)
-        // ------------------------------------
         
-        mainMenu.scaleMode = .aspectFill
-        let transition = SKTransition.fade(withDuration: 1.0)
-        view.presentScene(mainMenu, transition: transition)
         GameManager.shared.reset()
+        
+        gameDelegate?.gameSceneDidRequestMainMenu(self)
+        
+        self.isPaused = false
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
         collisionManager.handleContact(contact)
     }
     
+    
+    // MARK: Tutorial Logic
+    
+    /// Sets up the initial state of the tutorial UI.
+    private func setupTutorial() {
+        // Create a container for all tutorial UI
+        tutorialNode = SKNode()
+        tutorialNode.position = CGPoint(x: 0, y: 65) // Positioned above the player
+        tutorialNode.zPosition = ZPositions.hud
+        addChild(tutorialNode)
+        
+        // Create the semi-transparent background card
+        let card = SKShapeNode(rectOf: CGSize(width: 300, height: 120), cornerRadius: 10)
+        card.fillColor = .black.withAlphaComponent(0.7)
+        card.strokeColor = .clear
+        tutorialNode.addChild(card)
+        
+        // --- ADD THIS BLOCK to create the title ---
+        titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        titleLabel.text = "Tutorial"
+        titleLabel.fontSize = 22
+        titleLabel.fontColor = .green
+        // Position it at the top of the card
+        titleLabel.position = CGPoint(x: 0, y: 35)
+        tutorialNode.addChild(titleLabel)
+        // -----------------------------------------
+
+        
+        // Create the text label
+        tutorialLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+        tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
+        tutorialLabel.fontSize = 16
+        tutorialLabel.fontColor = .white
+        tutorialLabel.numberOfLines = 0
+        tutorialLabel.preferredMaxLayoutWidth = 280
+        tutorialLabel.verticalAlignmentMode = .center
+        tutorialNode.addChild(tutorialLabel)
+        
+        // Create the optional image node (initially hidden)
+        tutorialImage = SKSpriteNode()
+        tutorialImage.position = CGPoint(x: 200, y: -50) // Positioned above the text
+        tutorialImage.isHidden = true
+        tutorialNode.addChild(tutorialImage)
+        
+        // Create a "Skip" button (this part is the same)
+        skipButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        skipButton.text = "Skip Tutorial"
+        skipButton.fontSize = 20
+        skipButton.fontColor = .cyan
+        //skipButton.position = CGPoint(x: size.width / 3, y: size.height / 3)
+        skipButton.position = CGPoint(x: 270, y: -150)
+        skipButton.zPosition = ZPositions.hud
+        skipButton.name = "skipButton"
+        addChild(skipButton)
+        
+        // --- ADD THE NEW "NEXT" BUTTON ---
+        // Create it once, but keep it hidden until a step is completed.
+        tutorialNextButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        tutorialNextButton.text = "Next >"
+        tutorialNextButton.fontSize = 22
+        tutorialNextButton.fontColor = .gray
+        tutorialNextButton.position = CGPoint(x: 100, y: -40) // Positioned in the bottom-right of the card
+        tutorialNextButton.name = "tutorialNextButton"
+        //tutorialNextButton.isHidden = true // Start hidden
+        tutorialNode.addChild(tutorialNextButton)
+        
+        // Start the first step
+        completeTutorialStep()
+    }
+    
+    /// Moves the tutorial to the next step and updates the UI.
+    func advanceTutorial() {
+        
+        tutorialNextButton.fontColor = .gray
+        // Find the next step in our enum's list of cases.
+        if let currentIndex = TutorialStep.allCases.firstIndex(of: currentTutorialStep),
+           currentIndex + 1 < TutorialStep.allCases.count {
+            currentTutorialStep = TutorialStep.allCases[currentIndex + 1]
+        } else {
+            currentTutorialStep = .complete
+        }
+        
+        // Update the instruction image based on the new step.
+        switch currentTutorialStep {
+        case .welcome:
+            
+            tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
+        case .moveRight:
+            titleLabel.text = "Movement"
+            tutorialLabel.text = "Use the joystick to move left and right."
+        case .jump:
+            titleLabel.text = "Jumping"
+            tutorialLabel.text = "Push the joystick up to jump."
+        case .swipeUp:
+            titleLabel.text = "Boulder Pull"
+            tutorialLabel.text = "Swipe Up to pull up a boulder from the ground"
+            // Example of showing an optional image for this step
+            tutorialImage.texture = SKTexture(imageNamed: "swipeArrow")
+            tutorialImage.size = CGSize(width: 350, height: 350) // Set a size for the icon
+            tutorialImage.isHidden = false
+        case .quickAttack:
+            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x + 100, y: GameManager.shared.boulderFinalY))
+            titleLabel.text = "Quick Attack"
+            tutorialLabel.text = "Tap left/right side of the screen to shoot a rock piece"
+            tutorialImage.isHidden = true
+        case .strongAttack:
+            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x + 100, y: GameManager.shared.boulderFinalY))
+            titleLabel.text = "Strong Attack"
+            tutorialLabel.text = "Swipe right/left to launch the closest boulder"
+            tutorialImage.zRotation = -.pi / 2
+            tutorialImage.isHidden = false
+        case .splashAttack:
+            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x - 400, y: GameManager.shared.boulderFinalY))
+            titleLabel.text = "Splash Attack"
+            tutorialLabel.text = "Swipe down to launch a boulder for area damage."
+            tutorialImage.zRotation = .pi
+        case .littleRat:
+            enemiesManager.spawnSingleEnemy(type: .littleRat)
+            titleLabel.text = "Enemies"
+            tutorialLabel.text = "Litttle Rats dodge Strong attacks. Use your quick attack(TAP)!"
+            tutorialImage.isHidden = true
+        case .blocker:
+            enemiesManager.spawnSingleEnemy(type: .blocker)
+            titleLabel.text = "Enemies"
+            tutorialLabel.text = "Blocker shields block direct hits. Use a Splash Attack(Swipe Down) to break them!"
+        case .collectGem:
+            let gem = PickupNode(type: .coin)
+            gem.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
+            self.worldNode.addChild(gem)
+            titleLabel.text = "Pick Ups"
+            tutorialLabel.text = "Collect Gems from Enemies to increase your score and level up!"
+        case .medPack:
+            player.currentHealth = 50
+            hud.updateHealthBar(currentHealth: CGFloat(player.currentHealth), maxHealth: CGFloat(GameManager.shared.playerMaxHealth))
+            let med = PickupNode(type: .health)
+            med.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
+            self.worldNode.addChild(med)
+            
+            tutorialLabel.text = "Restore health only when damaged."
+        case .levelUp:
+            enemiesManager.spawnSingleEnemy(type: .normal)
+            GameManager.shared.currentScore = GameManager.shared.levelThresholdIncrements[0] - (GameManager.shared.normalEnemyValue + GameManager.shared.normalGemValue)
+            titleLabel.text = "Upgrades"
+            tutorialLabel.text = "When you level up, you get to choose an upgrade!"
+        case .finalMessage:
+            titleLabel.text = "Tutorial Complete"
+            tutorialLabel.text = "Time to use your ROCK MAGIC!"
+            completeTutorialStep()
+        case .complete:
+            isTutorialActive = false
+            GameManager.shared.reset()
+            enemiesManager.beginSpawning() // Tell the enemies to start
+            // The tutorial is over, so remove all its UI.
+            tutorialNode.removeFromParent()
+            skipButton.removeFromParent()
+        }
+    }
+    
+    // --- ADD THIS NEW FUNCTION ---
+    /// Called when the player completes the action for the current tutorial step.
+    /// This makes the "Next" button appear.
+    func completeTutorialStep() {
+        // Only show the button if the tutorial isn't over.
+        if currentTutorialStep != .complete {
+            tutorialNextButton.fontColor = .cyan
+        }
+    }
+    
+}
+
+// This enum defines every step of our tutorial.
+enum TutorialStep: CaseIterable {
+    case welcome
+    case moveRight
+    case jump
+    case swipeUp
+    case quickAttack
+    case strongAttack
+    case splashAttack
+    case littleRat
+    case blocker
+    case collectGem
+    case medPack
+    case levelUp
+    case finalMessage
+    case complete
 }
 
 
@@ -714,3 +1208,8 @@ enum JoystickFlickState {
     case neutral
     case primed // The joystick has been pushed down, ready for a flick up.
 }
+
+
+
+
+

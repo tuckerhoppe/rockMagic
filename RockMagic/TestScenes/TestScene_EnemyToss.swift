@@ -34,7 +34,7 @@ class TestScene_EnemyToss: SKScene, SKPhysicsContactDelegate {
         addChild(ground)
 
         // 2. Add a single enemy
-        enemy = EnemyNode()
+        enemy = EnemyNode(type: .normal)
         enemy.position = CGPoint(x: frame.midX, y: 150)
         addChild(enemy)
         

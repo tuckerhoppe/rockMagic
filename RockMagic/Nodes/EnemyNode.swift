@@ -46,6 +46,7 @@ class EnemyNode: SKSpriteNode {
     var positionalOffset: CGFloat = 0.0
     
     private var lastAttackTime: TimeInterval = 0
+    var lastContactDamageTime: TimeInterval = 0
     
     // --- HEALTH  & DAMAGE PROPERTIES ---
     var maxHealth: Int = 100
@@ -55,6 +56,8 @@ class EnemyNode: SKSpriteNode {
     var damage: Int = 1
     
     var shield: Bool = false
+    private var shieldSprite: SKSpriteNode!
+
     
     // --- 2. HEALTH BAR NODES ---
     private var healthBarBackground: SKShapeNode!
@@ -64,41 +67,125 @@ class EnemyNode: SKSpriteNode {
     
     var enemyType: EnemyType = .normal
     
-    init() {
-        
+//    init() {
+//        
+//        let texture = SKTexture(imageNamed: "badGuyR1")
+//        super.init(texture: texture, color: .clear, size: texture.size())
+//        
+//        self.positionalOffset = CGFloat.random(in: -15.0...15.0)
+//        self.name = "enemy"
+//        self.zPosition = ZPositions.enemy
+//        
+//        // Get the current enemy health from the shared manager
+//        self.maxHealth = GameManager.shared.enemyHealth
+//        self.damage = GameManager.shared.enemyDamage
+//        self.currentHealth = self.maxHealth
+//        
+//        
+//        
+//        // 1. Get the base speed from the GameManager.
+//        self.moveSpeed = GameManager.shared.enemyMoveSpeed
+//        
+//        let enemyTypeRoll = Int.random(in: 1...13)
+//
+//        if enemyTypeRoll <= 4 { // 30% chance t(rolls 1, 2, or 3)
+//            // --- LITTLE RAT ---
+//            self.enemyType = .littleRat
+//            self.moveSpeed *= 1.5
+//            self.currentHealth /= 2 // Easy to kill
+//            self.maxHealth /= 2 // Easy to kill
+//            self.setScale(0.65)
+//            self.color = .red
+//            self.colorBlendFactor = 0.3
+//            print("Little Rat spawned!")
+//            
+//        } else if enemyTypeRoll <= 5 { // 10% chance to be a "Big Boy" (rolls 4)
+//            // --- BIG BOY ---
+//            self.enemyType = .bigBoy
+//            self.moveSpeed *= 0.5
+//            self.damage *= 2
+//            self.currentHealth *= 2
+//            self.maxHealth *= 2
+//            self.setScale(1.75)
+//            self.color = .blue
+//            self.colorBlendFactor = 0.3
+//            print("Big Boy spawned!")
+//            
+//        } else if enemyTypeRoll <= 7 { // 20% chance
+//            // --- ADD THIS NEW BLOCKER TYPE ---
+//            self.enemyType = .blocker
+//            self.moveSpeed *= 0.75
+//            //self.currentHealth *= 2 // Tough to break
+//            //self.maxHealth *= 2
+//            self.shield = true
+//            self.setScale(0.9)
+//            self.color = .yellow
+//            self.colorBlendFactor = 0.4
+//            print("Blocker spawned!")
+//        }
+//
+//        
+//        self.myMoveSpeed = moveSpeed
+//        
+//        // Setup
+//        setupPhysicsBody()
+//        setupHealthBar() // Call the new setup function
+//    }
+    
+    // In EnemyNode.swift
+
+    // The initializer now requires an EnemyType
+    init(type: EnemyType) {
         let texture = SKTexture(imageNamed: "badGuyR1")
         super.init(texture: texture, color: .clear, size: texture.size())
         
+        // --- Set default properties ---
         self.positionalOffset = CGFloat.random(in: -15.0...15.0)
         self.name = "enemy"
         self.zPosition = ZPositions.enemy
-        
-        // Get the current enemy health from the shared manager
         self.maxHealth = GameManager.shared.enemyHealth
         self.damage = GameManager.shared.enemyDamage
         self.currentHealth = self.maxHealth
-        
-        
-        
-        // 1. Get the base speed from the GameManager.
         self.moveSpeed = GameManager.shared.enemyMoveSpeed
         
-        let enemyTypeRoll = Int.random(in: 1...13)
+        // --- ADD THIS BLOCK to create the shield ---
+        // Replace "Shield_Icon" with your actual asset name
+        shieldSprite = SKSpriteNode(imageNamed: "shield")
+        // Set the shield to be exactly 50x50 points.
+        shieldSprite.size = CGSize(width: 50, height: 50)
+        shieldSprite.zPosition = 1 // Make sure it's in front of the enemy
+        shieldSprite.isHidden = true // Start hidden
+        addChild(shieldSprite)
+        // ------------------------------------------
+        
+        
+        
+        // --- Configure the enemy based on its type ---
+        configure(for: type)
+        
+        updateShieldVisibility()
+        
+        // --- Final Setup ---
+        self.myMoveSpeed = moveSpeed
+        setupPhysicsBody()
+        setupHealthBar()
+    }
 
-        if enemyTypeRoll <= 4 { // 30% chance t(rolls 1, 2, or 3)
-            // --- LITTLE RAT ---
-            self.enemyType = .littleRat
+    /// Applies stat modifications based on the enemy's type.
+    private func configure(for type: EnemyType) {
+        self.enemyType = type
+        
+        switch type {
+        case .littleRat:
             self.moveSpeed *= 1.5
-            self.currentHealth /= 2 // Easy to kill
-            self.maxHealth /= 2 // Easy to kill
+            self.currentHealth /= 2
+            self.maxHealth /= 2
             self.setScale(0.65)
             self.color = .red
             self.colorBlendFactor = 0.3
             print("Little Rat spawned!")
             
-        } else if enemyTypeRoll <= 5 { // 10% chance to be a "Big Boy" (rolls 4)
-            // --- BIG BOY ---
-            self.enemyType = .bigBoy
+        case .bigBoy:
             self.moveSpeed *= 0.5
             self.damage *= 2
             self.currentHealth *= 2
@@ -108,38 +195,37 @@ class EnemyNode: SKSpriteNode {
             self.colorBlendFactor = 0.3
             print("Big Boy spawned!")
             
-        } else if enemyTypeRoll <= 7 { // 20% chance
-            // --- ADD THIS NEW BLOCKER TYPE ---
-            self.enemyType = .blocker
+        case .blocker:
             self.moveSpeed *= 0.75
-            //self.currentHealth *= 2 // Tough to break
-            //self.maxHealth *= 2
             self.shield = true
             self.setScale(0.9)
             self.color = .yellow
             self.colorBlendFactor = 0.4
             print("Blocker spawned!")
+            
+        case .normal:
+            // No changes needed for a normal enemy
+            break
         }
-
-        
-        self.myMoveSpeed = moveSpeed
-        
-        // Setup
-        setupPhysicsBody()
-        setupHealthBar() // Call the new setup function
     }
-    
+
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
+    
     // The function now accepts the player as a parameter
     private func performDodge() {
-        print("Little Rat dodged!")
+        //print("Little Rat dodged!")
         // A small hop up and away from the player
         //let horizontalDirection: CGFloat = (self.position.x < player.worldPosition.x) ? -1.0 : 1.0
-        let impulse = CGVector(dx: 0, dy: 15)
+        let impulse = CGVector(dx: 0, dy: 8)
         physicsBody?.applyImpulse(impulse)
+    }
+    
+    /// Shows or hides the shield sprite based on the shield property.
+    func updateShieldVisibility() {
+        shieldSprite.isHidden = !shield
     }
 
     
@@ -175,7 +261,7 @@ class EnemyNode: SKSpriteNode {
             // 3. If both checks pass, update the timer and deal damage.
             lastAttackTime = currentTime
             
-            print("Enemy attacks player!")
+            //print("Enemy attacks player!")
             target.takeDamage(amount: self.damage)
             
             if let gameScene = self.scene as? GameScene {
@@ -222,15 +308,27 @@ class EnemyNode: SKSpriteNode {
     }
     
     // --- 4. TAKE DAMAGE FUNCTION ---
-    func takeDamage(amount: Int) {
+    func takeDamage(amount: Int, contactPoint: CGPoint, largeStrike: Bool = false) {
         // Can't take damage if invulnerable or already in the process of dying
         if isInvulnerable || currentState == .dying { return }
+        
+        if contactPoint != .zero {
+            // --- THE FIX: Check the rock piece's state ---
+            if largeStrike {
+                // If the piece is part of a full boulder, play the big effect.
+                EffectManager.shared.playBoulderImpactEffect(at: contactPoint, level: GameManager.shared.strongAttackLevel)
+            } else {
+                // If it's a single, loose piece, play the small effect.
+                EffectManager.shared.playRockPieceImpactEffect(at: contactPoint, level: GameManager.shared.quickAttackLevel)
+            }
+        }
+        
         
         currentHealth -= amount
         
         // Become invulnerable for a short period to prevent instant multi-hits
         isInvulnerable = true
-        let wait = SKAction.wait(forDuration: 0.5)
+        let wait = SKAction.wait(forDuration: 0.025)
         let makeVulnerable = SKAction.run { [weak self] in
             self?.isInvulnerable = false
         }
@@ -252,6 +350,18 @@ class EnemyNode: SKSpriteNode {
     
     // --- 5. DEATH FUNCTION ---
     func startDeathSequence() {
+        
+        // 1. Safely cast the scene to a GameScene.
+        if let gameScene = self.scene as? GameScene {
+            // 2. Check if the tutorial is on the "kill enemy" step.
+            if gameScene.currentTutorialStep == .littleRat && self.enemyType == .littleRat {
+                // 3. If yes, complete the step.
+                gameScene.completeTutorialStep()
+            } else if gameScene.currentTutorialStep == .blocker && self.enemyType == .blocker {
+                gameScene.completeTutorialStep()
+            }
+        }
+        
         self.removeAllActions()
         // Make it a non-physical "ragdoll" so it doesn't interact with anything else
         self.physicsBody?.isDynamic = false
@@ -272,12 +382,12 @@ class EnemyNode: SKSpriteNode {
         }
         
         // --- ADD THIS BLOCK TO DROP A STAMINA PICKUP ---
-        let staminaPickup = PickupNode(type: .stamina)
-        staminaPickup.position = self.position
-        // Offset it slightly from the coin so they don't overlap
-        staminaPickup.position.x += 30
-        staminaPickup.position.y = GameManager.shared.groundLevel + 15
-        self.parent?.addChild(staminaPickup)
+//        let staminaPickup = PickupNode(type: .stamina)
+//        staminaPickup.position = self.position
+//        // Offset it slightly from the coin so they don't overlap
+//        staminaPickup.position.x += 30
+//        staminaPickup.position.y = GameManager.shared.groundLevel + 15
+//        self.parent?.addChild(staminaPickup)
         
         let fadeOut = SKAction.fadeOut(withDuration: 0.5)
         let scaleDown = SKAction.scale(to: 0.1, duration: 0.5)
@@ -286,7 +396,12 @@ class EnemyNode: SKSpriteNode {
         let sequence = SKAction.sequence([deathAnimation, SKAction.removeFromParent()])
         self.run(sequence)
         
-        (scene as? GameScene)?.enemyDefeated()
+        if self.enemyType == .normal {
+            (scene as? GameScene)?.addScore(amount: 1, at: self.position)
+        } else {
+            (scene as? GameScene)?.addScore(amount: 2, at: self.position)
+        }
+        
     }
 
     func setAnimationState(to newState: EnemyState, target: PlayerNode? = nil) {
@@ -305,7 +420,7 @@ class EnemyNode: SKSpriteNode {
                 walkAction = SKAction.repeatForever(SKAction.animate(with: walkFrames, timePerFrame: 0.1, resize: true, restore: false))
             }
             run(walkAction, withKey: "animation")
-            print("walking")
+            //print("walking")
         case .attacking:
             
             guard let attackTarget = target else { return }
@@ -313,8 +428,8 @@ class EnemyNode: SKSpriteNode {
             // if player is walking
             if attackTarget.isWalking {
                 // Walking Attack
-                print("attacking!")
-//                
+                //print("attacking!")
+//
 //                run(sequence, withKey: "animation")
                 let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
                 let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
@@ -339,7 +454,7 @@ class EnemyNode: SKSpriteNode {
 //                    print("second one! enemy MOve speed: ",GameManager.shared.enemyMoveSpeed)
 //                }
                 
-                print("move speed: ", self.moveSpeed)
+                //print("move speed: ", self.moveSpeed)
                 walkToTarget(objective: attackTarget)
                 
                 
@@ -396,7 +511,7 @@ class EnemyNode: SKSpriteNode {
             run(tossedAction, withKey: "animation")
         
         case .dying:
-            print("DYING!")
+            print("")
             
         }
         
@@ -420,7 +535,7 @@ class EnemyNode: SKSpriteNode {
         
         // --- Blocker Resistance Logic ---
         if self.enemyType == .blocker && attackType != .splash && self.shield == true{
-            print("Attack blocked!")
+            //print("Attack blocked!")
             // 1. Get the parent boulder from the rock piece that hit.
             if let boulder = rockPiece.parentBoulder, let boulderBody = boulder.physicsBody {
                 
@@ -479,6 +594,9 @@ class EnemyNode: SKSpriteNode {
             setAnimationState(to: .tossed)
             let powerMultiplier: CGFloat
             switch attachedCount {
+            case 4:
+                powerMultiplier = 1.3
+                damageToDeal = GameManager.shared.fullBoulderDamage
             case 3:
                 powerMultiplier = 1.2
                 damageToDeal = GameManager.shared.fullBoulderDamage
@@ -489,6 +607,7 @@ class EnemyNode: SKSpriteNode {
                 powerMultiplier = 1.0
                 damageToDeal = GameManager.shared.oneThirdBoulderDamage
             }
+            
             
 
             let hitDirection = boulderBody.velocity.normalized()
@@ -509,7 +628,7 @@ class EnemyNode: SKSpriteNode {
         } else { // QUICK ATTACK
             // SINGLE PIECE hit - also needs more force, but less than a full boulder.
             //print("Light attack!")
-            damageToDeal = GameManager.shared.rockPieceDamage
+            damageToDeal = GameManager.shared.quickStrikeDamage
             setAnimationState(to: .tossed)
             
             let basePieceKnockback: CGFloat = GameManager.shared.rockPieceBaseKnockback // Increased from 30
@@ -527,8 +646,15 @@ class EnemyNode: SKSpriteNode {
                     rockPiece.removeFromParent()
                 }
         }
+        
+        //print("damage to deal before bonus: \(damageToDeal)")
+        
+        let damageWithSizeBonus = CGFloat(damageToDeal) * GameManager.shared.sizeMultiplier
+        //print("size Multiplier: \(GameManager.shared.sizeMultiplier)")
+        damageToDeal = Int(damageWithSizeBonus)
+        //print("damage to deal after bonus: \(damageToDeal)")
 
-        takeDamage(amount: damageToDeal)
+        takeDamage(amount: damageToDeal, contactPoint: self.position, largeStrike: rockPiece.isAttached)
         enemyBody.applyImpulse(finalImpulse)
         
     }
@@ -542,7 +668,7 @@ class EnemyNode: SKSpriteNode {
             guard let self = self else { return }
             
             self.setAnimationState(to: .tossed)
-            self.takeDamage(amount: 5)
+            self.takeDamage(amount: 5, contactPoint: self.position)
 
             // --- THE FIX: Calculate horizontal impulse ---
             // Determine if the enemy is to the left or right of the boulder's center.

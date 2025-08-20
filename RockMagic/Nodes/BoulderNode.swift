@@ -55,8 +55,8 @@ class Boulder: SKNode {
 
         // --- SETUP THE PIECES ---
         var increase = 0
-        for _ in 0..<3 {
-            let piece = RockPiece(color: .brown, size: CGSize(width: 50 - increase, height: 20))
+        for _ in 0..<4 {
+            let piece = RockPiece(color: .brown, size: CGSize(width: GameManager.shared.boulderWidth - increase, height: GameManager.shared.boulderHeight)) // 50, 20
             piece.parentBoulder = self
             piece.position = CGPoint(x: 25, y: increase)
             piece.zPosition = ZPositions.boulder

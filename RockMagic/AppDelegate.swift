@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CloudKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +16,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        let container = CKContainer.default()
+            container.accountStatus { (status, error) in
+                if let error = error {
+                    print("AppDelegate CloudKit Check FAILED with error: \(error.localizedDescription)")
+                } else {
+                    print("AppDelegate CloudKit Check SUCCEEDED with status: \(status.rawValue)")
+                }
+            }
         return true
     }
 

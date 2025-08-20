@@ -60,22 +60,7 @@ class MagicManager {
         }
         
         
-        // NO LONGER AFFECTS PLAYER DIRECTLY
-//        // 2. Check if the player is in that area.
-//        if let player = self.player, let scene = self.scene {
-//            //player.playAnimation(.jump)
-//            // --- THE FIX: Convert the origin point, then create a new rect ---
-//            // First, convert the player's frame's origin from scene-space to world-space.
-//            let playerOriginInWorld = scene.worldNode.convert(player.frame.origin, from: scene)
-//            // Then, create a new frame in the world's coordinate system.
-//            let playerFrameInWorld = CGRect(origin: playerOriginInWorld, size: player.frame.size)
-//            
-//            if boulderSpawnRect.intersects(playerFrameInWorld) {
-//                // If they overlap, launch the player and stop.
-//                player.launch(with: CGVector(dx: 0, dy: GameManager.shared.playerBoulderJumpForce))
-//                //return // Exit the function early
-//            }
-//        }
+        
         
         // 3. Check if any enemies are in that area.
         //var launchedAnEnemy = false
@@ -107,10 +92,12 @@ class MagicManager {
         let finalPosition = CGPoint(x: spot, y: finalYPosition)
         let moveUpAction = SKAction.move(to: finalPosition, duration: 0.3)
         moveUpAction.timingMode = .easeOut // Makes the end of the animation smoother
-
+        EffectManager.shared.playBoulderSummonEffect(at: finalPosition)
         // Run the animation
         boulder.run(moveUpAction)
-
+        // We play it at the final position where the boulder will land.
+        
+        EffectManager.shared.playBoulderSummonEffect(at: finalPosition)
         // Add the boulder to the world and set up its physics
         scene?.worldNode.addChild(boulder)
         if let scene = scene {
@@ -139,6 +126,8 @@ class MagicManager {
         let moveUpAction = SKAction.move(to: finalPosition, duration: 0.3)
         boulder.run(moveUpAction)
         
+        // We play it at the final position where the boulder will land.
+        EffectManager.shared.playBoulderSummonEffect(at: finalPosition)
         // Add it to the world
         scene?.worldNode.addChild(boulder)
         if let scene = scene {
@@ -238,6 +227,17 @@ class MagicManager {
             $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
         })
     }
+    
+    func farthestBoulder() -> Boulder? {
+        guard let player = player else { return nil }
+
+        let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld && $0.type != .golden }
+
+        // Use .max(by:) instead of .min(by:) to find the element with the greatest distance.
+        return activeBoulders.max(by: {
+            $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
+        })
+    }
 
 
     
@@ -268,6 +268,9 @@ class MagicManager {
         currentBoulder = closestBoulder()
         guard let boulderToLaunch = currentBoulder else { return }
         
+        // --- ADD THIS LINE to play the effect ---
+        EffectManager.shared.playStrongAttackEffect(at: boulderToLaunch.position, direction: direction, level: GameManager.shared.strongAttackLevel)
+            
         // --- Proactive Hit Detection ---
         // 1. Define a "hitbox" in front of the boulder.
         let hitboxWidth: CGFloat = 30
@@ -323,10 +326,13 @@ class MagicManager {
 //            print("Not enough stamina to shoot!")
 //            return
 //        }
-        guard let player = player else { return }
+        //guard let player = player else { return }
         
         currentBoulder = closestBoulder()
         guard let boulderToShoot = currentBoulder, let topPiece = boulderToShoot.pieces.last(where: { $0.isAttached }) else { return }
+        
+        
+        
         
         // --- Apply the same fix here ---
         let hitboxWidth: CGFloat = 30
@@ -335,7 +341,10 @@ class MagicManager {
         // --- THE FIX: A more robust way to calculate the hitbox's X position ---
         let topPieceWorldPos = boulderToShoot.convert(topPiece.position, to: scene!.worldNode)
         let topPieceCenter = topPieceWorldPos.x
-
+        
+        // --- ADD THIS LINE to play the effect ---
+        EffectManager.shared.playQuickStrikeEffect(at: topPieceWorldPos, direction: direction, level: GameManager.shared.quickAttackLevel)
+        
         let hitboxX: CGFloat
         if direction == .right {
             // When facing right, the hitbox should start at the center of the rock piece.
@@ -399,7 +408,7 @@ class MagicManager {
     /// Launches the nearest boulder in a parabolic arc to a target location for a splash attack.
     func splashAttack(at targetLocation: CGPoint) {
         // 1. Find the nearest available boulder.
-        guard let boulder = closestBoulder() else {
+        guard let boulder = farthestBoulder() else {
             print("No boulder available for splash attack.")
             return
         }
@@ -438,21 +447,25 @@ class MagicManager {
     private func createSplashHitbox(at location: CGPoint) {
         guard let enemies = enemiesManager?.enemies else { return }
         
-        let splashRadius: CGFloat = 100.0
-        // --- ADD THIS BLOCK TO DRAW THE HITBOX ---
-        if let scene = self.scene {
-            let debugCircle = SKShapeNode(circleOfRadius: splashRadius)
-            debugCircle.position = location
-            debugCircle.strokeColor = .red
-            debugCircle.lineWidth = 2
-            debugCircle.zPosition = ZPositions.hud
+        // --- ADD THIS LINE to play the effect ---
+        EffectManager.shared.playSplashAttackEffect(at: location, level: GameManager.shared.splashAttackLevel)
 
-            let fadeOut = SKAction.fadeOut(withDuration: 1.0)
-            let remove = SKAction.removeFromParent()
-            debugCircle.run(SKAction.sequence([fadeOut, remove]))
-            
-            scene.worldNode.addChild(debugCircle)
-        }
+        
+        let splashRadius: CGFloat = GameManager.shared.splashAttackRadius
+        // --- ADD THIS BLOCK TO DRAW THE HITBOX ---
+//        if let scene = self.scene {
+//            let debugCircle = SKShapeNode(circleOfRadius: splashRadius)
+//            debugCircle.position = location
+//            debugCircle.strokeColor = .red
+//            debugCircle.lineWidth = 2
+//            debugCircle.zPosition = ZPositions.hud
+//
+//            let fadeOut = SKAction.fadeOut(withDuration: 1.0)
+//            let remove = SKAction.removeFromParent()
+//            debugCircle.run(SKAction.sequence([fadeOut, remove]))
+//            
+//            scene.worldNode.addChild(debugCircle)
+//        }
         // ------------------------------------------
         
         for enemy in enemies {
@@ -468,10 +481,16 @@ class MagicManager {
                 let knockbackForce: CGFloat = 100.0
                 let impulse = CGVector(dx: knockbackDirection.dx * knockbackForce, dy: 100)
                 
+                var damageToDeal: Int = GameManager.shared.splashAttackDamage
+                var sizeBonus = CGFloat(damageToDeal) * GameManager.shared.sizeMultiplier
+                //print("size Multiplier: \(GameManager.shared.sizeMultiplier)")
+                damageToDeal = Int(sizeBonus)
+                
                 enemy.physicsBody?.applyImpulse(impulse)
-                enemy.takeDamage(amount: 20)
+                enemy.takeDamage(amount: damageToDeal, contactPoint: .zero)
                 
                 enemy.shield = false
+                enemy.updateShieldVisibility()
                 
 //                // --- THE FIX: We need a rockPiece to pass to getTossed ---
 //                // Create a temporary, invisible rock piece to act as the source of the damage.

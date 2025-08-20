@@ -42,11 +42,15 @@ class SetupManager {
     
     private func setupPlayer() {
         let player = PlayerNode()
-        player.position = CGPoint(x: scene.frame.midX, y: GameManager.shared.playerStartY)
+        player.position = CGPoint(x: GameManager.shared.playerStartX, y: GameManager.shared.playerStartY)
         player.zPosition = ZPositions.player
         player.worldPosition = player.position
         scene.player = player
         scene.addChild(player) // Child of Scene
+        
+        print("player start x: ", GameManager.shared.playerStartX)
+        print("Center Screen AreaR: ", GameManager.shared.centerScreenAreaR)
+        print("Center Screen AreaL: ", GameManager.shared.centerScreenAreaL)
     }
     
 
@@ -119,7 +123,7 @@ class SetupManager {
     }
     
     // EVENTUALLY GO IN A SETUP ENVIORMNT Manager?
-    private func setupGround() {
+    private func setupGroundOG() {
         // Define your new lighter brown color
         let lightBrown = UIColor(red: 0.82, green: 0.71, blue: 0.55, alpha: 1.0) // This is a "Tan" color
 
@@ -135,6 +139,44 @@ class SetupManager {
         ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
         ground.physicsBody?.contactTestBitMask = PhysicsCategory.enemy
         ground.physicsBody?.collisionBitMask = PhysicsCategory.enemy | PhysicsCategory.player
+        
+        scene.worldNode.addChild(ground)
+    }
+    
+    private func setupGround() {
+        let groundHeight: CGFloat = GameManager.shared.groundHeight
+        let worldWidth = scene.size.width * 3
+
+        let ground = SKNode()
+        ground.position = CGPoint(x: 0, y: GameManager.shared.groundY)
+        ground.zPosition = 1
+        
+        ground.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: worldWidth, height: groundHeight))
+        ground.physicsBody?.isDynamic = false
+        ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
+        ground.physicsBody?.collisionBitMask = PhysicsCategory.enemy | PhysicsCategory.player
+        
+        let groundTexture = SKTexture(imageNamed: "groundTextureB")
+        
+        let desiredTileWidth: CGFloat = 100.0
+        let scaleFactor = desiredTileWidth / groundTexture.size().width
+        
+        let actualTileWidth = groundTexture.size().width * scaleFactor
+        let numberOfTiles = Int(ceil(worldWidth / actualTileWidth))
+        
+        for i in 0...numberOfTiles {
+            let tile = SKSpriteNode(texture: groundTexture)
+            tile.anchorPoint = .zero
+            tile.setScale(scaleFactor)
+            
+            // --- THE FIX: Multiply the width by a value less than 1 ---
+            // Using 0.95 will make each tile overlap the last one by 5%.
+            let overlapFactor: CGFloat = 1.0
+            let xPos = (actualTileWidth * overlapFactor) * CGFloat(i) - (worldWidth / 2)
+            tile.position = CGPoint(x: xPos, y: -groundHeight / 2)
+            
+            ground.addChild(tile)
+        }
         
         scene.worldNode.addChild(ground)
     }
@@ -189,7 +231,7 @@ class SetupManager {
     private func setupEnemies() {
         let enemiesManager = EnemiesManager(scene: scene)
         scene.enemiesManager = enemiesManager
-        enemiesManager.startSpawningEnemies()
+        //enemiesManager.startSpawningEnemies()
     }
     
     

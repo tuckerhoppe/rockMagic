@@ -29,17 +29,17 @@ class PickupNode: SKSpriteNode {
         switch type {
         case .coin:
             // Replace "Coin_Texture" with your asset name
-            texture = SKTexture(imageNamed: "coin")
+            texture = SKTexture(imageNamed: "yellowGem")
         case .health:
             // Replace "Health_Texture" with your asset name
             texture = SKTexture(imageNamed: "health")
             
         case .stamina:
-            texture = SKTexture(imageNamed: "yellowGem")
+            texture = SKTexture(imageNamed: "coin")
             
         case .fiveCoin:
             // Replace "Health_Texture" with your asset name
-            texture = SKTexture(imageNamed: "silverFiveCoin")
+            texture = SKTexture(imageNamed: "greenGem")
             
         case .geode:
             texture = SKTexture(imageNamed: "greenGeode")
@@ -52,8 +52,8 @@ class PickupNode: SKSpriteNode {
         self.setScale(0.05)
         setupPhysicsBody()
         
-        if type == .coin {
-            self.setScale(0.045)
+        if type == .coin || type == .fiveCoin {
+            self.setScale(0.02)
             // Make the coin pickup disappear after 15 seconds
             let wait = SKAction.wait(forDuration: 15.0)
             let fadeOut = SKAction.fadeOut(withDuration: 0.5)

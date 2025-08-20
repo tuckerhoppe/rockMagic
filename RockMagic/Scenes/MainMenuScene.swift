@@ -5,10 +5,19 @@
 //  Created by Tucker Hoppe on 7/22/25.
 //
 
+// --- ADD THIS PROTOCOL at the top of the file ---
+protocol MainMenuSceneDelegate: AnyObject {
+    func mainMenuDidTapStart(_ scene: MainMenuScene)
+    func mainMenuDidTapHighScores(_ scene: MainMenuScene)
+}
+
 import Foundation
 import SpriteKit
 
 class MainMenuScene: SKScene {
+    
+    // --- ADD THIS NEW PROPERTY ---
+    weak var menuDelegate: MainMenuSceneDelegate?
 
     // --- Properties ---
     private var instructionsOverlay: SKNode!
@@ -50,9 +59,17 @@ class MainMenuScene: SKScene {
         instructionsButton.name = "instructionsButton"
         addChild(instructionsButton)
         
-        // Keep a reference to the main buttons to easily hide/show them
-        mainMenuButtons = [titleLabel, startButton, instructionsButton]
+        // --- ADD THE NEW HIGH SCORES BUTTON ---
+        let highScoresButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        highScoresButton.text = "High Scores"
+        highScoresButton.fontSize = 40
+        highScoresButton.fontColor = .cyan
+        highScoresButton.position = CGPoint(x: self.size.width / 2, y: instructionsButton.position.y - 60)
+        highScoresButton.name = "highScoresButton"
+        addChild(highScoresButton)
         
+        // Keep a reference to the main buttons to easily hide/show them
+        mainMenuButtons = [titleLabel, startButton, instructionsButton, highScoresButton]
         // --- Setup the hidden instructions overlay ---
         setupInstructionsOverlay()
     }
@@ -153,6 +170,14 @@ class MainMenuScene: SKScene {
             showInstructions()
         } else if tappedNode?.name == "backButton" {
             hideInstructions()
+        } else if tappedNode?.name == "highScoresButton" {
+            // Transition to the HighScoreScene
+//            let highScoreScene = HighScoreScene(size: self.size)
+//            
+//            highScoreScene.scaleMode = .aspectFill
+//            self.view?.presentScene(highScoreScene, transition: .fade(withDuration: 0.5))
+            
+            showHighScores()
         }
     }
     
@@ -167,10 +192,20 @@ class MainMenuScene: SKScene {
         mainMenuButtons.forEach { $0.isHidden = false }
     }
     
+//    private func startGame() {
+//        guard let gameScene = GameScene(fileNamed: "GameScene") else { return }
+//        gameScene.scaleMode = .aspectFill
+//        let transition = SKTransition.fade(withDuration: 1.0)
+//        self.view?.presentScene(gameScene, transition: transition)
+//    }
+    
     private func startGame() {
-        guard let gameScene = GameScene(fileNamed: "GameScene") else { return }
-        gameScene.scaleMode = .aspectFill
-        let transition = SKTransition.fade(withDuration: 1.0)
-        self.view?.presentScene(gameScene, transition: transition)
+        print("Start button tapped. Notifying delegate...")
+        // Instead of creating the scene here, we tell our delegate to do it.
+        menuDelegate?.mainMenuDidTapStart(self)
+    }
+    
+    private func showHighScores() {
+        menuDelegate?.mainMenuDidTapHighScores(self)
     }
 }

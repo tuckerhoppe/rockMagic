@@ -12,6 +12,7 @@ class PauseMenuNode: SKNode {
 
     // --- Properties ---
     private var instructionsOverlay: SKNode!
+    private var viewUpgradesOverlay: ViewUpgradesNode!
     private var menuButtons: [SKNode] = []
 
     
@@ -46,6 +47,13 @@ class PauseMenuNode: SKNode {
         resumeButton.name = "resumeButton"
         addChild(resumeButton)
         
+        // --- ADD a "View Upgrades" button ---
+        let viewUpgradesButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        viewUpgradesButton.text = "View Upgrades"
+        viewUpgradesButton.position = CGPoint(x: 0, y: instructionsPos)
+        viewUpgradesButton.name = "viewUpgradesButton"
+        //addChild(viewUpgradesButton)
+        
         let restartButton = SKLabelNode(fontNamed: "Menlo-Regular")
         restartButton.text = "Restart"
         restartButton.fontSize = 40
@@ -70,7 +78,7 @@ class PauseMenuNode: SKNode {
         exitButton.name = "exitButton"
         addChild(exitButton)
         
-        menuButtons = [titleLabel, resumeButton, restartButton, instructionsButton, exitButton]
+        menuButtons = [titleLabel, resumeButton, restartButton, instructionsButton,viewUpgradesButton, exitButton]
         
         setupInstructionsOverlay(size: size)
     }
@@ -113,6 +121,8 @@ class PauseMenuNode: SKNode {
         instructionsOverlay.addChild(backButton)
         
         instructionsOverlay.isHidden = true
+        self.viewUpgradesOverlay = ViewUpgradesNode(size: size)
+        self.viewUpgradesOverlay.isHidden = true
         addChild(instructionsOverlay)
     }
     
@@ -163,6 +173,11 @@ class PauseMenuNode: SKNode {
         backButton.name = "backButton"
         instructionsOverlay.addChild(backButton)
         
+        // --- Setup the new overlay ---
+        viewUpgradesOverlay = ViewUpgradesNode(size: size)
+        viewUpgradesOverlay.isHidden = true
+        addChild(viewUpgradesOverlay)
+        
         // Add the overlay, but keep it hidden.
         instructionsOverlay.isHidden = true
         addChild(instructionsOverlay)
@@ -175,6 +190,17 @@ class PauseMenuNode: SKNode {
     
     func hideInstructions() {
         instructionsOverlay.isHidden = true
+        menuButtons.forEach { $0.isHidden = false }
+    }
+    
+    // --- ADD these two new functions ---
+    func showUpgrades() {
+        viewUpgradesOverlay.isHidden = false
+        menuButtons.forEach { $0.isHidden = true }
+    }
+    
+    func hideUpgrades() {
+        viewUpgradesOverlay.isHidden = true
         menuButtons.forEach { $0.isHidden = false }
     }
 }

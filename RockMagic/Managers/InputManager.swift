@@ -117,20 +117,37 @@ class InputManager {
     // --- Action Handlers ---
     
     private func handleTap(at screenLocation: CGPoint) {
-        print("InputManager: Detected Tap")
+        //print("InputManager: Detected Tap")
         let direction: LaunchDirection = (screenLocation.x > 0) ? .right : .left
+        if scene.currentTutorialStep == .quickAttack {
+            scene.completeTutorialStep()
+        }
         scene.player.playAnimation(.quickStrike)
         scene.magicManager.shootRockPiece(direction: direction)
     }
     
     private func handleSwipe(from start: CGPoint, to end: CGPoint) {
-        print("InputManager: Detected Swipe")
+        //print("InputManager: Detected Swipe")
         let dx = end.x - start.x
         let dy = end.y - start.y
         
+        //TUTORIAL---------------
+        if scene.currentTutorialStep == .swipeUp && end.y > start.y {
+            // Swipe UP
+            scene.completeTutorialStep()
+        } else if scene.currentTutorialStep == .strongAttack && abs(dx) > abs(dy){
+            // Swipe left/right
+            scene.completeTutorialStep()
+        } else if scene.currentTutorialStep == .splashAttack && abs(dy) > abs(dx) && dy < 0 {
+            // swipe down
+            scene.completeTutorialStep()
+        }
+        
+        //------------------
         if abs(dy) > abs(dx) && dy > 0 {
             // It's a SWIPE UP
             scene.magicManager.pullUpBoulder(position: end)
+            
         } else if abs(dx) > abs(dy) {
             // It's a SWIPE LEFT/RIGHT
             let direction: LaunchDirection = (dx > 0) ? .right : .left
