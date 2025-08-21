@@ -2,7 +2,7 @@
 
 A 2D side-scrolling action game for iOS built with Swift and SpriteKit, featuring a dynamic, physics-based combat system. **This project is currently in a private beta test via TestFlight.**
 
-![RockMagic Gameplay Demo](RockMagicClip.gif)
+![RockMagic Gameplay Demo](RockMagicVtwoClip.gif)
 
 ## Key Features
 
@@ -32,6 +32,16 @@ This project implements a complete, end-to-end gameplay loop, demonstrating a wi
     * "Blockers" are immune to direct damage and must be defeated with splash attacks.
 * **Parametric Particle System:** Created a central `EffectManager` to generate visceral, procedural particle effects for all key actions (summons, impacts, speed lines). The intensity of these effects (particle count, speed, scale, color) scales directly with the player's corresponding upgrade level, providing satisfying visual feedback for progression.
 * **CloudKit Global Leaderboard:** Integrated a cloud-based backend to fetch and display a global high score leaderboard. This includes saving new scores and handling asynchronous network operations.
+
+## Beta Testing & Iteration
+
+This project has undergone multiple rounds of private beta testing with real users via TestFlight. Feedback from these tests has directly driven key feature improvements and bug fixes, demonstrating a professional and user-centric development workflow.
+
+* **Interactive Tutorial:** An interactive, skippable tutorial was implemented to improve player onboarding and teach the game's unique mechanics.
+* **Joystick Refinement:** The virtual joystick was completely re-engineered based on tester feedback to improve responsiveness and eliminate input conflicts with gesture-based attacks.
+* **Gameplay Balancing:** The `GameManager` was used to iteratively tune all gameplay variables—including player damage, enemy health scaling, and upgrade rewards—to create a more balanced and engaging difficulty curve.
+* **Player & Camera Position** The player's position on screen and how that was calculated was updated to staying in the middle of the screen to improve gameplay experience.
+
 
 ## Tech Stack
 
