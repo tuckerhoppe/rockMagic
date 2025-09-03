@@ -15,7 +15,7 @@ import SpriteKit
 /// including movement state, health, animations, and physics. It responds to
 /// user input (forwarded from `GameScene`) and interacts with the game world
 /// through its physics body and combat functions.
-class PlayerNode: SKSpriteNode {
+class PlayerNode: SKSpriteNode, Damageable {
     
     // MARK: - State & Movement
     var isFacingRight: Bool = true
@@ -141,9 +141,6 @@ class PlayerNode: SKSpriteNode {
         }
     }
     
-    // In PlayerNode.swift
-
-    // --- ADD THESE NEW FUNCTIONS ---
 
     /// Applies a standard vertical jump impulse.
     func jump() {
@@ -157,12 +154,6 @@ class PlayerNode: SKSpriteNode {
         let jumpForce = GameManager.shared.playerJumpHeight
         physicsBody?.applyImpulse(CGVector(dx: 0, dy: jumpForce))
     }
-
-    // In PlayerNode.swift
-
-    // In PlayerNode.swift
-
-    // In PlayerNode.swift
 
     func boulderJump() {
         // 1. Initial checks
@@ -217,12 +208,13 @@ class PlayerNode: SKSpriteNode {
         self.physicsBody?.affectedByGravity = true
         self.physicsBody?.allowsRotation = false
         self.physicsBody?.restitution = 0.0
-        self.physicsBody?.friction = GameManager.shared.playerFriction
+        //self.physicsBody?.friction = GameManager.shared.playerFriction
+        self.physicsBody?.friction = 0.0 // Was 0.5
         self.physicsBody?.categoryBitMask = PhysicsCategory.player
 
         // Player
-        physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge
-        physicsBody?.contactTestBitMask = PhysicsCategory.enemy | PhysicsCategory.pickup | PhysicsCategory.ground
+        physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge | PhysicsCategory.pillar
+        physicsBody?.contactTestBitMask = PhysicsCategory.enemy | PhysicsCategory.pickup | PhysicsCategory.ground 
         
     }
     
@@ -234,6 +226,17 @@ class PlayerNode: SKSpriteNode {
         if currentHealth < 0 {
             currentHealth = 0
         }
+        
+        // 1. Define the actions for the flash effect.
+        let redFlash = SKAction.colorize(with: .red, colorBlendFactor: 0.7, duration: 0.0) // Instantly turn red
+        let delay = SKAction.wait(forDuration: 0.1)                                       // Hold the color for a moment
+        let fadeBack = SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.2)        // Fade back to the original color
+
+        // 2. Create a sequence to run the actions in order.
+        let flashSequence = SKAction.sequence([redFlash, delay, fadeBack])
+
+        // 3. Run the sequence on the player node.
+        self.run(flashSequence)
         
         //print("Player health: \(currentHealth)/\(maxHealth)")
         
@@ -247,7 +250,7 @@ class PlayerNode: SKSpriteNode {
     
     // --- ADD DEATH FUNCTION ---
     private func die() {
-        print("GAME OVER")
+        //print("GAME OVER")
         
         // Tell the GameScene to handle the game over sequence
         if let gameScene = self.scene as? GameScene {

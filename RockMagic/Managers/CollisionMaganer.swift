@@ -46,19 +46,52 @@ class CollisionManager {
         if firstBody.categoryBitMask == PhysicsCategory.enemy && secondBody.categoryBitMask == PhysicsCategory.ground {
             if let enemy = firstBody.node as? EnemyNode {
                 // If the enemy hits the ground while tossed, return to idle
-                if enemy.currentState == .tossed && !enemy.justTossed {
+//                if enemy.currentState == .tossed && !enemy.justTossed {
+//                    enemy.setAnimationState(to: .walking)
+//                }
+//                
+//                // --- NEW: TRIGGER FINAL DEATH ---
+//                // If the enemy hits the ground AND is in the 'dying' state, start the removal sequence.
+//                if enemy.currentState == .dying {
+//                    enemy.startDeathSequence()
+//                }
+                // NEW LOGIC: Check for death upon landing
+                if enemy.currentState == .tossed && enemy.currentHealth <= 0 {
+                    // If the tossed enemy has no health, it's defeated.
+                    enemy.startDeathSequence()
+
+                } else if enemy.currentState == .tossed && !enemy.justTossed {
+                    // If it has health, it just gets back up.
                     enemy.setAnimationState(to: .walking)
                 }
                 
-                // --- NEW: TRIGGER FINAL DEATH ---
-                // If the enemy hits the ground AND is in the 'dying' state, start the removal sequence.
-                if enemy.currentState == .dying {
-                    enemy.startDeathSequence()
-                }
+                
             }
         }
         
-        // --- ADD THIS NEW BLOCK for Player and Enemy Contact ---
+        // ---  Enemy and Pillar contact ---
+        if (firstBody.categoryBitMask == PhysicsCategory.enemy && secondBody.categoryBitMask == PhysicsCategory.pillar) {
+            if let enemy = firstBody.node as? EnemyNode, let pillar = secondBody.node as? PillarNode {
+                // When an enemy lands on a pillar, make it slippery.
+                
+                enemy.isOnPillar = true
+//                enemy.physicsBody?.friction = 0.0
+//                print("enemy posY: \(enemy.position.y)")
+//                print("ground Y: \(GameManager.shared.groundY)")
+//                
+//                if enemy.position.y >= GameManager.shared.groundY {
+//                    print("we're in business")
+//                    let direction: CGFloat = (enemy.position.x < pillar.position.x) ? -1.0 : 1.0
+//                            
+//                    // 3. Apply a small, consistent impulse to push them off.
+//                    let nudgeForce: CGFloat = 20.0 // You can tune this value
+//                    let nudgeImpulse = CGVector(dx: nudgeForce * direction, dy: 0)
+//                    enemy.physicsBody?.applyImpulse(nudgeImpulse)
+//                }
+            }
+        }
+        
+        // ---  Player and Enemy Contact ---
         if firstBody.categoryBitMask == PhysicsCategory.player && secondBody.categoryBitMask == PhysicsCategory.enemy {
             if let player = firstBody.node as? PlayerNode,
                let enemy = secondBody.node as? EnemyNode {
@@ -108,15 +141,15 @@ class CollisionManager {
                 switch pickup.type {
                 case .coin:
                     // If it's a coin, increase the score
-                    (scene as? GameScene)?.addScore(amount: GameManager.shared.normalGemValue, at: pickup.position)
+                    (scene)?.addScore(amount: GameManager.shared.normalGemValue, at: pickup.position)
                     pickup.removeFromParent()
                     
                     // TUTORIAL CHECK
-                    if self.scene?.currentTutorialStep == .collectGem{
+                    if self.scene?.tutorialManager.currentTutorialStep == .collectGem{
                         // 3. If yes, complete the step.
-                        self.scene?.completeTutorialStep()
-                    } else if self.scene?.currentTutorialStep == .levelUp {
-                        self.scene?.completeTutorialStep()
+                        self.scene?.tutorialManager.completeTutorialStep()
+                    } else if self.scene?.tutorialManager.currentTutorialStep == .levelUp {
+                        self.scene?.tutorialManager.completeTutorialStep()
                     }
                     
                 case .health:
@@ -128,9 +161,9 @@ class CollisionManager {
                     }
                     
                     // TUTORIAL CHECK
-                    if self.scene?.currentTutorialStep == .medPack{
+                    if self.scene?.tutorialManager.currentTutorialStep == .medPack{
                         // 3. If yes, complete the step.
-                        self.scene?.completeTutorialStep()
+                        self.scene?.tutorialManager.completeTutorialStep()
                     }
                 case .stamina:
                     if player.currentStamina < player.maxStamina {
@@ -140,7 +173,7 @@ class CollisionManager {
                     }
                     
                 case .fiveCoin:
-                    (scene as? GameScene)?.addScore(amount: GameManager.shared.specialGemValue, at: pickup.position)
+                    (scene)?.addScore(amount: GameManager.shared.specialGemValue, at: pickup.position)
                     pickup.removeFromParent()
                 
                     
@@ -169,6 +202,29 @@ class CollisionManager {
 //                scene?.updatePlayerHealthBar()
 //            }
 //        }
+        
+    }
+    
+    
+    // --- ADD THIS NEW FUNCTION to handle when contact ends ---
+    func handleEndContact(_ contact: SKPhysicsContact) {
+        let firstBody = contact.bodyA
+        let secondBody = contact.bodyB
+        
+        // Check if an enemy has STOPPED touching a pillar
+        if (firstBody.categoryBitMask == PhysicsCategory.enemy && secondBody.categoryBitMask == PhysicsCategory.pillar) {
+            if let enemy = firstBody.node as? EnemyNode {
+                // When the enemy slides off, restore its normal friction.
+                enemy.physicsBody?.friction = enemy.originalFriction
+                enemy.isOnPillar = false
+            }
+        } else if (firstBody.categoryBitMask == PhysicsCategory.pillar && secondBody.categoryBitMask == PhysicsCategory.enemy) {
+            if let enemy = secondBody.node as? EnemyNode {
+                enemy.physicsBody?.friction = enemy.originalFriction
+                enemy.isOnPillar = false
+            }
+        }
+        
         
     }
 }

@@ -29,6 +29,8 @@ class GameManager {
     // =================================================================
     // These define the fundamental feel of the game and rarely change.
     
+    var currentGameMode: gameMode = .survival
+    
     // In GameManager.swift
     //SCORE VALUES
     let normalEnemyValue = 1
@@ -112,7 +114,7 @@ class GameManager {
     var enemyHealth: Int = 100
     
     /// The damage dealt by an enemy's attack.
-    var enemyDamage: Int = 2
+    var enemyDamage: Int = 1
     
     /// The maximum number of enemies allowed on screen at once.
     var maxEnemyCount: Int = 0
@@ -145,7 +147,11 @@ class GameManager {
     var staminaLevel = 0
     let maxUpgradeLevel = 5
     
-    
+    // In GameManager.swift
+
+    // --- ADD this to your Static Game Variables ---
+    /// The maximum number of pillars allowed in the world at one time.
+    let maxPillarCount: Int = 4
     
     
     /// The player's maximum health.
@@ -212,7 +218,7 @@ class GameManager {
     func update(deltaTime: TimeInterval) {
         
         // If the tutorial is active, do not increase game time or difficulty.
-        guard let scene = self.scene, !scene.isTutorialActive else { return }
+        guard let scene = self.scene, !scene.tutorialManager.isTutorialActive else { return }
         gameTime += deltaTime
         timeSinceLastDifficultyIncrease += deltaTime
         
@@ -337,28 +343,28 @@ class GameManager {
         }
         
         // --- ADD THIS BLOCK at the end of the applyUpgrade function ---
-        print("""
-        --- Current Upgrade Levels ---
-        Health:         \(healthLevel)/\(maxUpgradeLevel)
-        Quick Attack:   \(quickAttackLevel)/\(maxUpgradeLevel)
-        Strong Attack:  \(strongAttackLevel)/\(maxUpgradeLevel)
-        Splash Attack:  \(splashAttackLevel)/\(maxUpgradeLevel)
-        Boulder Size:   \(boulderSizeLevel)/\(maxUpgradeLevel)
-        Stamina Regen:  \(staminaLevel)/\(maxUpgradeLevel)
-        ------------------------------
-        """)
-        print("""
-        --- Player Stats Updated ---
-        Max Health: \(playerMaxHealth)
-        Quick Strike Damage: \(quickStrikeDamage) x \(sizeMultiplier)
-        Quick Strike with size bonus\(Float(quickStrikeDamage) * Float(sizeMultiplier))
-        Full Boulder Damage: \(fullBoulderDamage)
-        Full Boulder with size bonus\(Float(fullBoulderDamage) * Float(sizeMultiplier))
-        Splash Attack Damage: \(splashAttackDamage)
-        Splash Attack with size bonus\(Float(splashAttackDamage) * Float(sizeMultiplier))
-        Boulder Size Damage multiplier(boulder Size): \(sizeMultiplier)
-        --------------------------
-        """)
+//        print("""
+//        --- Current Upgrade Levels ---
+//        Health:         \(healthLevel)/\(maxUpgradeLevel)
+//        Quick Attack:   \(quickAttackLevel)/\(maxUpgradeLevel)
+//        Strong Attack:  \(strongAttackLevel)/\(maxUpgradeLevel)
+//        Splash Attack:  \(splashAttackLevel)/\(maxUpgradeLevel)
+//        Boulder Size:   \(boulderSizeLevel)/\(maxUpgradeLevel)
+//        Stamina Regen:  \(staminaLevel)/\(maxUpgradeLevel)
+//        ------------------------------
+//        """)
+//        print("""
+//        --- Player Stats Updated ---
+//        Max Health: \(playerMaxHealth)
+//        Quick Strike Damage: \(quickStrikeDamage) x \(sizeMultiplier)
+//        Quick Strike with size bonus\(Float(quickStrikeDamage) * Float(sizeMultiplier))
+//        Full Boulder Damage: \(fullBoulderDamage)
+//        Full Boulder with size bonus\(Float(fullBoulderDamage) * Float(sizeMultiplier))
+//        Splash Attack Damage: \(splashAttackDamage)
+//        Splash Attack with size bonus\(Float(splashAttackDamage) * Float(sizeMultiplier))
+//        Boulder Size Damage multiplier(boulder Size): \(sizeMultiplier)
+//        --------------------------
+//        """)
         
     }
     
@@ -368,7 +374,7 @@ class GameManager {
 //    var oneThirdBoulderDamage: Int = 25
     
     private func increaseDifficulty() {
-        print("--- Difficulty Increased! ---")
+        //print("--- Difficulty Increased! ---")
         
         // Increment the difficulty level counter each time this function runs
         difficultyLevel += 1
@@ -386,12 +392,15 @@ class GameManager {
         
         
         // Only add a new enemy every OTHER difficulty increase (every 30 seconds)
-        if difficultyLevel % 2 == 0 && maxEnemyCount < 20{
-            maxEnemyCount += 2
-            print("Max enemy count increased to: \(maxEnemyCount)")
-            
-            
-        }
+//        if difficultyLevel % 2 == 0 && maxEnemyCount < 20{
+//            maxEnemyCount += 2
+//            print("Max enemy count increased to: \(maxEnemyCount)")
+//            
+//            
+//        }
+        
+        maxEnemyCount += 2
+        print("Max enemy count increased to: \(maxEnemyCount)")
         
         if enemyDamage < 30 {
             enemyDamage += enemyDamageIncreaseAmount
@@ -401,13 +410,10 @@ class GameManager {
         // A smaller interval means a higher spawn rate, increasing pressure on the player.
         // The 'if' statement prevents the interval from becoming too short.
         if enemySpawnInterval > 0.5 { // Don't let it get too fast
-            enemySpawnInterval *= 0.95 // Make spawns 5% faster
+            enemySpawnInterval *= 0.90 // Make spawns 5% faster
         }
                 
-        print("New Enemy Health: \(enemyHealth)")
-        print("Max Enemy Count: \(maxEnemyCount)")
-        print("New Enemy Damage: \(enemyDamage)")
-        print("New Enemy Speed: \(enemyMoveSpeed)")
+        //
         // You can add more changes here, like increasing enemy damage or spawn rate.
     }
     
@@ -450,11 +456,13 @@ class GameManager {
         enemyHealth = 100 // Reset to base value
         maxEnemyCount = 1 // 1 <-- ADD THIS LINE
         enemyDamage = 2 // was 2
-        enemySpawnInterval = 3.0
+        enemySpawnInterval = 2.0
         enemyMoveSpeed = 100.0 // was 100
         
         // Reset upgrades
         resetUpgrades()
+        
+        scene?.isGameOverInteractable = false
         
         
     }

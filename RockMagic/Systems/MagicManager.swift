@@ -20,6 +20,7 @@ class MagicManager {
     private var enemiesManager: EnemiesManager?
     private var currentBoulder: Boulder?
     var boulders: [Boulder] = []
+    private var pillars: [PillarNode] = []
     
     var magicBoundDistance: CGFloat = GameManager.shared.magicBoundaryDistance
     
@@ -37,6 +38,14 @@ class MagicManager {
         for boulder in boulders {
             boulder.update()
         }
+        
+        // 1. Tell every pillar to run its update logic.
+        for pillar in pillars {
+            pillar.update()
+        }
+        
+        // 2. Clean up any destroyed pillars from the tracking array.
+        pillars.removeAll { $0.parent == nil }
     }
     
     // In MagicManager.swift
@@ -75,10 +84,10 @@ class MagicManager {
         }
         
         // Give a 1 in 10 chance to spawn a golden boulder.
-        let boulderType: BoulderType = (Int.random(in: 1...3) == 4) ? .golden : .normal
+        //let boulderType: BoulderType = (Int.random(in: 1...3) == 4) ? .golden : .normal
         
         // Create the boulder with the chosen type.
-        let boulder = Boulder(type: boulderType)
+        let boulder = Boulder(type: .normal)
         //boulder.gameScene = self.scene
 
         // Define the start and end points for the animation
@@ -105,6 +114,30 @@ class MagicManager {
             //boulder.setupJoints()
         }
         boulders.append(boulder)
+        
+    }
+    
+    func pullUpPillar(at: CGPoint) -> PillarNode{
+        //print("place holder for pulling up a pillar", at)
+        
+        // sets position
+        let pillar = PillarNode()
+        pillar.position.x = at.x
+        
+        scene?.pillarBeingPulled = pillar
+        scene?.worldNode.addChild(pillar)
+        
+        pillars.append(pillar)
+        
+        // 2. Check if we are now over the limit.
+        if pillars.count > GameManager.shared.maxPillarCount {
+            // 3. If yes, get the oldest pillar (the first one in the array) and destroy it.
+            let oldestPillar = pillars.removeFirst()
+            oldestPillar.destroy()
+        }
+        
+        
+        return pillar
         
     }
     

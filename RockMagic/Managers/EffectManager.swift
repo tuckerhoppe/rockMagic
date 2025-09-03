@@ -213,6 +213,32 @@ class EffectManager {
         addEffect(emitter)
     }
     
+    // In EffectManager.swift
+
+    /// Plays a brown, dusty explosion effect for when a pillar is destroyed.
+    func playPillarDestroyedEffect(at position: CGPoint) {
+        let emitter = SKEmitterNode()
+        emitter.particleTexture = particleTexture
+        emitter.position = position
+
+        emitter.numParticlesToEmit = 50
+        emitter.particleBirthRate = 2000 // A very fast burst
+
+        // A dusty brown color
+        emitter.particleColor = UIColor(red: 0.6, green: 0.4, blue: 0.2, alpha: 1.0)
+        emitter.particleColorBlendFactor = 1.0
+        emitter.particleAlphaSequence = SKKeyframeSequence(keyframeValues: [0.8, 0.0], times: [0, 1])
+        emitter.particleScaleSequence = SKKeyframeSequence(keyframeValues: [0.3, 0.1], times: [0, 1])
+
+        // A slower, more billowy explosion
+        emitter.particleLifetime = 1.2
+        emitter.particleSpeed = 100
+        emitter.particleSpeedRange = 80
+        emitter.emissionAngleRange = .pi * 2 // 360 degrees
+
+        addEffect(emitter)
+    }
+    
     /// A helper function to add an emitter to the scene and have it clean itself up.
     private func addEffect(_ emitter: SKEmitterNode) {
         // The total duration is how long the emitter lives plus how long the last particle lives.

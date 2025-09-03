@@ -7,10 +7,16 @@
 
 import SpriteKit
 
+
 protocol GameSceneDelegate: AnyObject {
     func gameScene(_ scene: GameScene, didRequestHighScoreInputWith score: Int)
     func gameSceneDidRequestMainMenu(_ scene: GameScene) // <-- ADD THIS
     func gameSceneDidRestart(_ scene: GameScene)
+}
+
+enum gameMode {
+    case survival
+    case defense
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -25,6 +31,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var enemiesManager: EnemiesManager!
     var inputManager: InputManager!
     var collisionManager: CollisionManager!
+    var tutorialManager: TutorialManager!
     
     private var pauseMenu: PauseMenuNode!
     private var upgradeMenu: UpgradeMenuNode!
@@ -35,6 +42,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     weak var gameDelegate: GameSceneDelegate?
     
+    var gameMode: gameMode = GameManager.shared.currentGameMode
     
     // --- Add this new property ---
     private var gameplayTouch: UITouch?
@@ -52,7 +60,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     
     // --- ADD HUD AND SCORE PROPERTIES ---
-    private var hud: HUDNode!
+    var hud: HUDNode!
     //private var score = 0
     
     // --- ADD THE CAMERA NODE ---
@@ -70,6 +78,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var gameOverMenu: GameOverNode!
     
+    /// A flag to prevent accidental taps on the game over menu.
+    var isGameOverInteractable = false
+    
     // --- 2. DEFINE MOVEMENT PROPERTIES ---
     private let playerMoveSpeed: CGFloat = GameManager.shared.playerMoveSpeed
     private let centerScreenAreaR: CGFloat = GameManager.shared.centerScreenAreaR
@@ -84,70 +95,55 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Tracks if the joystick was pointing down in the previous frame.
     private var wasJoystickPointingDown = false
     
-    var testWorldNode: SKNode!
+    var pillarBeingPulled: PillarNode?
+    private var hasCreatedPillarThisTouch = false
     
-    // --- ADD THESE NEW PROPERTIES ---
-    var currentTutorialStep: TutorialStep = .welcome
-    //private var tutorialImageNode: SKSpriteNode!
-    // --- ADD THESE NEW PROPERTIES ---
-    private var tutorialNode: SKNode!
-    private var titleLabel: SKLabelNode!
-    private var tutorialLabel: SKLabelNode!
-    private var tutorialImage: SKSpriteNode!
-    private var tutorialNextButton: SKLabelNode!
-    // --- ADD THIS NEW PROPERTY ---
-    var isTutorialActive: Bool = true
+    //var testWorldNode: SKNode!
+    
+//    // --- ADD THESE NEW PROPERTIES ---
+//    var currentTutorialStep: TutorialStep = .welcome
+//    //private var tutorialImageNode: SKSpriteNode!
+//    // --- ADD THESE NEW PROPERTIES ---
+//    private var tutorialNode: SKNode!
+//    private var titleLabel: SKLabelNode!
+//    private var tutorialLabel: SKLabelNode!
+//    private var tutorialImage: SKSpriteNode!
+//    private var tutorialNextButton: SKLabelNode!
+//    // --- ADD THIS NEW PROPERTY ---
+//    var isTutorialActive: Bool = true
 
 
-    private var skipButton: SKLabelNode!
+   // private var skipButton: SKLabelNode!
     
     override func didMove(to view: SKView) {
+        
+        // PLEASE DELETEME
+        screenBoundaryLeft = -4
+        screenBoundaryRight = 4
+        
+        //--- All game Modes: ---
         backgroundColor = .cyan
         GameManager.shared.scene = self // Give the manager a reference to the scene
         
         GameManager.shared.reset()
-        // --- THE FIX: Use the view's size for the HUD ---
+        
         // Safely unwrap the view to get its dimensions
         guard let view = self.view else { return }
         
-        // --- ADD THIS LINE ---
         EffectManager.shared.scene = self
         
         // --- 3. INITIALIZE THE WORLD NODE ---
         worldNode = SKNode()
         addChild(worldNode)
-        
-        // --- ADD THIS BLOCK FOR THE WORLD GRID ---
-        // 1. Define the size of your game world. Let's make it 3 screens wide.
-        let worldWidth = self.size.width * 3
-        let worldHeight = self.size.height
-        let worldSize = CGSize(width: worldWidth, height: worldHeight)
-
-        // 2. Create the grid and add it to the worldNode so it scrolls
-        let worldGrid = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
+        //let worldGrid = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
         //worldNode.addChild(worldGrid)
         
-        testWorldNode = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
-        //addChild(testWorldNode) // Add it directly to the scene
-        
-        
-        hud = HUDNode(sceneSize: view.bounds.size)
-        //print(self.size)
-        hud.zPosition = ZPositions.hud
-        addChild(hud) // Add to scene, NOT worldNode
-       
-        // Define the screen boundaries for scrolling
-        screenBoundaryLeft = -self.size.width / 4
-        screenBoundaryRight = self.size.width / 4
-        
-        
-        setupManager = SetupManager(scene: self)
-        setupManager.setupAll(view: view)
-        
-        //setupPlayerHealthBar()
-        // --- ADD THIS FOR THE DEBUG GRID ---
         let grid = createCoordinateGrid(in: self, step: 50)
         //addChild(grid)
+        
+        setupManager = SetupManager(scene: self)
+        // Probably a generic setupall function and the setups for the other game modes
+        setupManager.setupAll(view: view, gameMode: gameMode)
         
         // Create the Pause Menu
         pauseMenu = PauseMenuNode(size: self.size)
@@ -155,11 +151,303 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseMenu.zPosition = ZPositions.hud + 10
         addChild(pauseMenu) // Add directly to the scene
         
-        // --- ADD THIS CALL ---
-        setupTutorial()
+        
+        // Might want a different world size for other game modes
+        hud = HUDNode(sceneSize: view.bounds.size)
+        hud.zPosition = ZPositions.hud
+        addChild(hud) // Add to scene, NOT worldNode
+        
+        tutorialManager = TutorialManager(scene: self)
+        // This tutorial is just
+        tutorialManager.setupTutorial()
+        // Maybe future additional tutorials for the specific modes.
+        
+        
+        
+        //--- SURVIVAL MODE ---
+        // Might want a different sized world
+        // 1. Define the size of your game world. Let's make it 3 screens wide.
+        let worldWidth = self.size.width * 3
+        let worldHeight = self.size.height
+        let worldSize = CGSize(width: worldWidth, height: worldHeight)
+        
+        
+        //testWorldNode = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
+        //addChild(testWorldNode) // Add it directly to the scene
+        
+        
+        
+        // --- Defend Mode ---
+        
+        // Initialize Boulder Family
+        //Initialize Enemies manager with specific Enemy behavior:
+        // Some enemies go for just the family, some go for just the player. Probably 70/30 split
 
+        
+        // Setup different Background??
+        
+        // Family Health to Hud
+        
+        
+        // --- Story Mode ---
+        
+        // initialize correct level stats based on saved distance
+        // Enemy manager stats for level,
+        
+        // Structures for level
+        // Distance for HUD along with configurable Health Hud(For any level specific objectives(family health, evil fort health))
+        
+        // --- ADD THIS ---
+//        // 1. Create the built-in long press gesture recognizer.
+//        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
+//        
+//        // 2. Configure it.
+//        longPressRecognizer.minimumPressDuration = 0.4 // How long the press must be.
+//
+//        // 3. Add it to the main view that hosts the scene.
+//        view.addGestureRecognizer(longPressRecognizer)
+        
 
     }
+    
+    
+    // --- Update plays every frame ---
+    override func update(_ currentTime: TimeInterval) {
+        
+        // --- ALL GAME MODES ---
+        inputManager.update(currentTime: currentTime)
+        
+        // Calculate the time elapsed since the last frame (deltaTime)
+        if lastUpdateTime == 0 {
+            lastUpdateTime = currentTime
+        }
+        let deltaTime = currentTime - lastUpdateTime
+        lastUpdateTime = currentTime
+        
+        // Update the shared GameManager instance
+        GameManager.shared.update(deltaTime: deltaTime)
+        
+        // --- Maybe remove all together?---
+        if let _ = draggedBoulder {
+            let hasStamina = player.drainStamina(deltaTime: deltaTime)
+            if !hasStamina {
+                // If the player runs out of stamina, force them to drop the boulder.
+                forceDropBoulder()
+            }
+        }
+        
+        let joystickVelocity = joystick.velocity
+        
+        // --- Maybe remove or adjust to run upgrades ---
+        player.regenerateStamina(deltaTime: deltaTime)
+        
+        
+        // Maybe put into a player Move function? Maybe not though it affects everything but the player for the most part
+        if player.action(forKey: "action") == nil {
+            if joystickVelocity.dx != 0 {
+                player.playAnimation(.walk)
+                player.updateFacingDirection(joystickVelocity: joystickVelocity)
+            } else {
+                player.playAnimation(.idle)
+            }
+        }
+        
+        
+//        if joystickVelocity.dx > 0 { // Moving Right
+//            //print(player.position.x)
+//            player.isWalking = true
+//            if player.worldPosition.x < 825 && (player.position.x < centerScreenAreaR && player.position.x > centerScreenAreaL){
+//                worldNode.position.x -= playerMoveSpeed
+//                farBackgroundNode.position.x -= playerMoveSpeed * 0.2
+//                midBackgroundNode.position.x -= playerMoveSpeed * 0.5
+//            } else { // On the right edge of the screen
+//                player.position.x += playerMoveSpeed
+//            }
+//            
+//        } else if joystickVelocity.dx < 0 { // Moving Left
+//            player.isWalking = true
+//            if player.worldPosition.x > -825 && (player.position.x < centerScreenAreaR && player.position.x > centerScreenAreaL){
+//                // FOR DEBUGGING
+//                //testWorldNode.position.x += playerMoveSpeed
+//                
+//                worldNode.position.x += playerMoveSpeed
+//                farBackgroundNode.position.x += playerMoveSpeed * 0.2
+//                midBackgroundNode.position.x += playerMoveSpeed * 0.5
+//            } else { // On the left edge of the screen
+//                player.position.x -= playerMoveSpeed
+//            }
+//            
+//        } else {
+//            player.isWalking = false
+//        }
+//        player.worldPosition.x = player.position.x - worldNode.position.x
+        
+        // 1. Handle animations (this part is the same)
+            if player.action(forKey: "action") == nil {
+                if joystickVelocity.dx != 0 {
+                    player.playAnimation(.walk)
+                    player.updateFacingDirection(joystickVelocity: joystickVelocity)
+                } else {
+                    player.playAnimation(.idle)
+                }
+            }
+            
+            // 2. Apply horizontal movement directly to the player's physics body.
+            //    The physics engine will now handle collisions with pillars correctly.
+//            if joystickVelocity.dx != 0 {
+//                player.physicsBody?.velocity.dx = joystickVelocity.dx * playerMoveSpeed * 100 // Multiply for physics velocity
+//            } else {
+//                player.physicsBody?.velocity.dx = 0
+//            }
+        
+        if joystickVelocity.dx > 0 { // Moving Right
+            player.physicsBody?.velocity.dx = playerMoveSpeed * 100
+        } else if joystickVelocity.dx < 0 { // Moving Left
+            player.physicsBody?.velocity.dx = -playerMoveSpeed * 100
+        } else {
+            player.physicsBody?.velocity.dx = 0
+        }
+        
+        
+        // --- Vertical (Jump) Movement ---
+        let yVelocity = joystickVelocity.dy
+        let verticalThreshold: CGFloat = 0.7
+        // If the joystick is pushed DOWN...
+        if yVelocity < -verticalThreshold {
+            // ...record the current time to "prime" the boulder jump.
+            flickPrimeTime = currentTime
+            
+        }
+        // If the joystick is pushed UP...
+        else if yVelocity > verticalThreshold {
+            // ...check if it was primed recently.
+            // The time window is 0.3 seconds. You can adjust this value.
+            if flickPrimeTime > 0 && currentTime - flickPrimeTime < 0.6 {
+                // If yes, it's a boulder jump.
+                print("BOULDER JUMP")
+                player.boulderJump()
+                // IMPORTANT: Reset the timer immediately to prevent multiple jumps.
+                flickPrimeTime = 0
+            } else {
+                // Otherwise, it's a normal jump.
+                player.jump()
+            }
+        }
+        
+        
+        
+        // Update enemies and managers
+        enemiesManager.updateEnemies(defaultTarget: player)
+        magicManager.update()
+        
+        // Highlight logic
+        let closest = magicManager.closestBoulder()
+        if closest !== highlightedBoulder {
+            highlightedBoulder?.setHighlight(active: false)
+            closest?.setHighlight(active: true)
+            highlightedBoulder = closest
+        }
+        
+        // Pillar Logic
+        if let pillar = pillarBeingPulled {
+            pillar.moveUp()
+        }
+
+        // --- ADD THIS BLOCK to check for tutorial actions ---
+        if tutorialManager.currentTutorialStep != .complete {
+            switch tutorialManager.currentTutorialStep {
+            case .moveRight:
+                if joystick.velocity.dx > 0.5 { tutorialManager.completeTutorialStep() }
+            case .jump:
+                if !player.isGrounded { tutorialManager.completeTutorialStep() }
+            default:
+                break // Other actions will be handled by the InputManager
+            }
+        }
+        
+        //
+    }
+    
+    // --- ADD THIS NEW FUNCTION ---
+    /// This function is called automatically AFTER the physics engine has calculated all movement.
+    override func didFinishUpdate() {
+        // --- THE FIX: Step 2 - Adjust the Camera (worldNode) ---
+        
+        // 1. Check if the player has moved outside the center screen boundaries.
+        let playerX = player.position.x
+        var worldXAdjustment: CGFloat = 0
+        
+        if playerX > screenBoundaryRight {
+            worldXAdjustment = playerX - screenBoundaryRight
+        } else if playerX < screenBoundaryLeft {
+            worldXAdjustment = playerX - screenBoundaryLeft
+        }
+        
+        // 2. If an adjustment is needed, scroll the world to bring the player back to the boundary.
+        if worldXAdjustment != 0 {
+            // Move the player's sprite back
+            player.position.x -= worldXAdjustment
+            
+            // Move the world by the same amount
+            worldNode.position.x -= worldXAdjustment
+            
+            // Move the parallax backgrounds
+            farBackgroundNode.position.x -= worldXAdjustment * 0.2
+            midBackgroundNode.position.x -= worldXAdjustment * 0.5
+        }
+        
+        // 3. Finally, calculate the worldPosition based on the final, true positions.
+        player.worldPosition.x = player.position.x - worldNode.position.x
+    }
+    
+    // --- ADD these new helper functions ---
+    func growPillar(at location: CGPoint) {
+        // If we haven't already created a pillar for this touch, create one.
+        if !hasCreatedPillarThisTouch {
+            hasCreatedPillarThisTouch = true
+            pillarBeingPulled = magicManager.pullUpPillar(at: location)
+        }
+        // Tell the pillar to grow.
+        pillarBeingPulled?.moveUp()
+    }
+
+    func stopGrowingPillar() {
+        // When the touch ends, we are no longer pulling a pillar.
+        pillarBeingPulled?.pullingUp = false
+        pillarBeingPulled = nil
+        hasCreatedPillarThisTouch = false // Reset for the next touch
+    }
+    
+//    // --- ADD THIS ACTION METHOD ---
+//    @objc func handleLongPress(gesture: UILongPressGestureRecognizer) {
+//        // Convert the touch location from the view's coordinate system to the scene's.
+//        let touchLocationInView = gesture.location(in: self.view)
+//        let sceneLocation = self.convertPoint(fromView: touchLocationInView)
+//
+//        // The gesture has multiple states. We only care about when it starts and ends.
+//        if gesture.state == .began {
+//            // This is equivalent to your old `handleHold`.
+//            // The user has successfully held their finger down.
+//            print("UILongPress BEGAN at: \(sceneLocation)")
+//            
+//            // --- Place your hold action here ---
+//            // Because the gesture recognizer runs separately from the main update loop,
+//            // it's still safest to dispatch heavy work.
+//            DispatchQueue.global(qos: .userInitiated).async {
+//                self.magicManager.pullUpPillar(at: sceneLocation)
+//                
+//                DispatchQueue.main.async {
+//                    // Update UI here if needed.
+//                }
+//            }
+//        } else if gesture.state == .ended || gesture.state == .cancelled {
+//            // This is for when the user lifts their finger.
+//            print("UILongPress ENDED.")
+//            pillarBeingPulled = nil
+//            
+//            // --- Place your "release" action here if you have one ---
+//        }
+//    }
     
     
     // --- ADD NEW CALLBACK FUNCTIONS ---
@@ -244,78 +532,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.currentHealth = player.maxHealth // Full heal on level up
         playerTookDamage() // Update the HUD
     }
- 
-    
-    
-    // --- ADD THIS NEW FUNCTION ---
-//    func showGameOverMenu() {
-//        // Pause the game to stop all action
-//        self.isPaused = true
-//        
-//        // Create the menu, passing in the final score
-//        gameOverMenu = GameOverNode(size: self.size, score: GameManager.shared.currentScore)
-//        gameOverMenu.zPosition = ZPositions.hud + 20 // Ensure it's on top of everything
-//        addChild(gameOverMenu)
-//    }
-    
-    // In GameScene.swift
-
-//    func showGameOverMenu() {
-//        // 1. Fetch the current high scores from CloudKit.
-//        CloudKitManager.shared.fetchHighScores { [weak self] (scores, error) in
-//            guard let self = self else { return }
-//            
-//            let highScores = scores ?? []
-//            let lowestScore = highScores.last?.score ?? 0
-//            
-//            // 2. Check if the player's score is a new high score.
-//            if highScores.count < 10 || GameManager.shared.currentScore > lowestScore {
-//                
-//                // --- THE FIX: Use the simple, correct syntax ---
-//                DispatchQueue.main.async {
-//                    if let viewController = self.view?.window?.rootViewController as? GameViewController {
-//                        viewController.promptForPlayerInitials(score: self.score) { initials in
-//                            
-//                            // 4. After the player enters their initials, save the score.
-//                            CloudKitManager.shared.saveHighScore(playerName: initials, score: self.score) { error in
-//                                if let error = error {
-//                                    print("Error saving high score: \(error.localizedDescription)")
-//                                }
-//                                // Finally, show the game over menu.
-//                                self.displayGameOverNode()
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//                // If it's not a high score, just show the game over menu immediately.
-//                self.displayGameOverNode()
-//            }
-//        }
-//    }
-
-    // In GameScene.swift
-
-//    func showGameOverMenu() {
-//        self.displayGameOverNode()
-//        CloudKitManager.shared.fetchHighScores { [weak self] (scores, error) in
-//            guard let self = self else { return }
-//            
-//            let highScores = scores ?? []
-//            let lowestScore = highScores.last?.score ?? 0
-//            
-//            if highScores.count < 10 || GameManager.shared.currentScore > lowestScore {
-//                // --- THE FIX: Just call the delegate ---
-//                // Tell the view controller to handle the pop-up.
-//                self.gameDelegate?.gameScene(self, didRequestHighScoreInputWith: GameManager.shared.currentScore)
-//            } else {
-//                // If it's not a high score, just show the game over menu immediately.
-//                self.displayGameOverNode()
-//            }
-//        }
-//    }
-    
-    // In GameScene.swift
 
     func showGameOverMenu() {
         // 1. Immediately display the game over node. This ensures it always appears.
@@ -367,11 +583,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func displayGameOverNode() {
         //guard GameManager.shared.currentScore > 0 else { return }
         self.isPaused = true
-        gameOverMenu = GameOverNode(size: self.size, score: GameManager.shared.currentScore)
         
+        gameOverMenu = GameOverNode(size: self.size, score: GameManager.shared.currentScore)
         gameOverMenu.zPosition = ZPositions.hud + 20
         addChild(gameOverMenu)
         print("GAME OVER NODE DISPLAYED")
+        
+        // --- ADD THIS LOGIC ---
+        // Start a 1-second timer. The menu will only be interactable after it finishes.
+//        let wait = SKAction.wait(forDuration: 1.0)
+//        let makeInteractable = SKAction.run { [weak self] in
+//            self?.isGameOverInteractable = true
+//            print("Ok it should be interactable now!")
+//        }
+//        self.run(SKAction.sequence([wait, makeInteractable]))
     }
     
     
@@ -397,134 +622,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     
-    // --- 4. NEW MOVEMENT LOGIC IN UPDATE ---
-    override func update(_ currentTime: TimeInterval) {
-        // --- ADD THIS BLOCK AT THE TOP OF THE UPDATE FUNCTION ---
-                
-        // Calculate the time elapsed since the last frame (deltaTime)
-        if lastUpdateTime == 0 {
-            lastUpdateTime = currentTime
-        }
-        let deltaTime = currentTime - lastUpdateTime
-        lastUpdateTime = currentTime
-        
-        // Update the shared GameManager instance
-        GameManager.shared.update(deltaTime: deltaTime)
-        
-        // --- ADD THIS BLOCK to handle stamina drain during drag ---
-        if let _ = draggedBoulder {
-            let hasStamina = player.drainStamina(deltaTime: deltaTime)
-            if !hasStamina {
-                // If the player runs out of stamina, force them to drop the boulder.
-                forceDropBoulder()
-            }
-        }
-        
-        let joystickVelocity = joystick.velocity
-        
-        // --- ADD THIS LINE ---
-        player.regenerateStamina(deltaTime: deltaTime)
-        
-        
-        // Horizontal Movement & Animation
-        if player.action(forKey: "action") == nil {
-            if joystickVelocity.dx != 0 {
-                player.playAnimation(.walk)
-                player.updateFacingDirection(joystickVelocity: joystickVelocity)
-            } else {
-                player.playAnimation(.idle)
-            }
-        }
-        
-        
-        if joystickVelocity.dx > 0 { // Moving Right
-            //print(player.position.x)
-            player.isWalking = true
-            if player.worldPosition.x < 825 && (player.position.x < centerScreenAreaR && player.position.x > centerScreenAreaL){
-                // FOR DEBUGGING
-                testWorldNode.position.x -= playerMoveSpeed
-                
-                worldNode.position.x -= playerMoveSpeed
-                farBackgroundNode.position.x -= playerMoveSpeed * 0.2
-                midBackgroundNode.position.x -= playerMoveSpeed * 0.5
-            } else { // On the right edge of the screen
-                player.position.x += playerMoveSpeed
-            }
-            
-        } else if joystickVelocity.dx < 0 { // Moving Left
-            player.isWalking = true
-            if player.worldPosition.x > -825 && (player.position.x < centerScreenAreaR && player.position.x > centerScreenAreaL){
-                // FOR DEBUGGING
-                testWorldNode.position.x += playerMoveSpeed
-                
-                worldNode.position.x += playerMoveSpeed
-                farBackgroundNode.position.x += playerMoveSpeed * 0.2
-                midBackgroundNode.position.x += playerMoveSpeed * 0.5
-            } else { // On the left edge of the screen
-                player.position.x -= playerMoveSpeed
-            }
-            
-        } else {
-            player.isWalking = false
-        }
-        
-        
-        
-        
-        
-        // --- REVISED Vertical (Jump) Movement ---
-        let yVelocity = joystickVelocity.dy
-        let verticalThreshold: CGFloat = 0.7
-        // If the joystick is pushed DOWN...
-        if yVelocity < -verticalThreshold {
-            // ...record the current time to "prime" the boulder jump.
-            flickPrimeTime = currentTime
-            
-        }
-        // If the joystick is pushed UP...
-        else if yVelocity > verticalThreshold {
-            // ...check if it was primed recently.
-            // The time window is 0.3 seconds. You can adjust this value.
-            if flickPrimeTime > 0 && currentTime - flickPrimeTime < 0.6 {
-                // If yes, it's a boulder jump.
-                print("BOULDER JUMP")
-                player.boulderJump()
-                // IMPORTANT: Reset the timer immediately to prevent multiple jumps.
-                flickPrimeTime = 0
-            } else {
-                // Otherwise, it's a normal jump.
-                player.jump()
-            }
-        }
-        
-        
-        player.worldPosition.x = player.position.x - worldNode.position.x
-        // Update enemies and managers
-        enemiesManager.updateEnemies(target: player)
-        magicManager.update()
-        
-        // Highlight logic (no changes needed here)
-        let closest = magicManager.closestBoulder()
-        if closest !== highlightedBoulder {
-            highlightedBoulder?.setHighlight(active: false)
-            closest?.setHighlight(active: true)
-            highlightedBoulder = closest
-        }
-        
-        // In GameScene.swift, inside the update() function
-
-        // --- ADD THIS BLOCK to check for tutorial actions ---
-        if currentTutorialStep != .complete {
-            switch currentTutorialStep {
-            case .moveRight:
-                if joystick.velocity.dx > 0.5 { completeTutorialStep() }
-            case .jump:
-                if !player.isGrounded { completeTutorialStep() }
-            default:
-                break // Other actions will be handled by the InputManager
-            }
-        }
-    }
+    
     
     // --- ADD this new callback function ---
     func playerUsedStamina() {
@@ -572,6 +670,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
             
+//            if tappedNode.name == "restartButton" || tappedNode.name == "exitButton" {
+//                // --- ADD THIS CHECK ---
+//                // Only allow the buttons to be tapped if the grace period is over.
+//                guard isGameOverInteractable else { continue }
+//            }
+            
+            
             // In GameScene.swift, inside touchesBegan()
 
             // --- This is the new logic for handling upgrade card taps ---
@@ -611,15 +716,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 case "goldenBoulderButton": magicManager.pullUpGoldenBoulderAtPlayer()
                 case "tutorialNextButton":
                     // Only advance if the button is active (cyan).
-                        if tutorialNextButton.fontColor == .cyan {
-                            advanceTutorial()
+                    if tutorialManager.tutorialNextButton.fontColor == .cyan {
+                            tutorialManager.advanceTutorial()
                         }
                 case "skipButton":
-                    currentTutorialStep = .complete
-                    isTutorialActive = false // Update the state here too
-                    enemiesManager.beginSpawning() // Tell the enemies to start
-                    tutorialNode.removeFromParent()
-                    skipButton.removeFromParent()
+                    tutorialManager.currentTutorialStep = .complete
+                    tutorialManager.isTutorialActive = false // Update the state here too
+                    enemiesManager.beginSpawning(gameMode: gameMode) // Tell the enemies to start
+                    tutorialManager.tutorialNode.removeFromParent()
+                    tutorialManager.skipButton.removeFromParent()
                 default:
                     wasButtonTapped = false // No known button was tapped
                 }
@@ -643,6 +748,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 let locationInWorld = touch.location(in: worldNode)
                 let locationInScene = touch.location(in: self)
                 inputManager.touchesBegan(at: locationInWorld, screenLocation: locationInScene, timestamp: touch.timestamp)
+                //inputManager.touchesBegan(at: locationInWorld, screenLocation: locationInScene, timestamp: touch.timestamp, touch: touch)
             }
             
         }
@@ -679,12 +785,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         touchesEnded(touches, with: event)
     }
     
-    // In GameScene.swift
-
-    // --- ADD THESE THREE NEW HELPER FUNCTIONS ---
-    
-
-    // In GameScene.swift
 
     func startDrag(on boulder: Boulder, at location: CGPoint) {
         // --- THE FIX: Check for full stamina before starting the drag ---
@@ -897,193 +997,182 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         collisionManager.handleContact(contact)
     }
     
+    // --- ADD THIS NEW FUNCTION ---
+    func didEnd(_ contact: SKPhysicsContact) {
+        collisionManager.handleEndContact(contact)
+    }
+    
     
     // MARK: Tutorial Logic
     
-    /// Sets up the initial state of the tutorial UI.
-    private func setupTutorial() {
-        // Create a container for all tutorial UI
-        tutorialNode = SKNode()
-        tutorialNode.position = CGPoint(x: 0, y: 65) // Positioned above the player
-        tutorialNode.zPosition = ZPositions.hud
-        addChild(tutorialNode)
-        
-        // Create the semi-transparent background card
-        let card = SKShapeNode(rectOf: CGSize(width: 300, height: 120), cornerRadius: 10)
-        card.fillColor = .black.withAlphaComponent(0.7)
-        card.strokeColor = .clear
-        tutorialNode.addChild(card)
-        
-        // --- ADD THIS BLOCK to create the title ---
-        titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
-        titleLabel.text = "Tutorial"
-        titleLabel.fontSize = 22
-        titleLabel.fontColor = .green
-        // Position it at the top of the card
-        titleLabel.position = CGPoint(x: 0, y: 35)
-        tutorialNode.addChild(titleLabel)
-        // -----------------------------------------
-
-        
-        // Create the text label
-        tutorialLabel = SKLabelNode(fontNamed: "Menlo-Regular")
-        tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
-        tutorialLabel.fontSize = 16
-        tutorialLabel.fontColor = .white
-        tutorialLabel.numberOfLines = 0
-        tutorialLabel.preferredMaxLayoutWidth = 280
-        tutorialLabel.verticalAlignmentMode = .center
-        tutorialNode.addChild(tutorialLabel)
-        
-        // Create the optional image node (initially hidden)
-        tutorialImage = SKSpriteNode()
-        tutorialImage.position = CGPoint(x: 200, y: -50) // Positioned above the text
-        tutorialImage.isHidden = true
-        tutorialNode.addChild(tutorialImage)
-        
-        // Create a "Skip" button (this part is the same)
-        skipButton = SKLabelNode(fontNamed: "Menlo-Regular")
-        skipButton.text = "Skip Tutorial"
-        skipButton.fontSize = 20
-        skipButton.fontColor = .cyan
-        //skipButton.position = CGPoint(x: size.width / 3, y: size.height / 3)
-        skipButton.position = CGPoint(x: 270, y: -150)
-        skipButton.zPosition = ZPositions.hud
-        skipButton.name = "skipButton"
-        addChild(skipButton)
-        
-        // --- ADD THE NEW "NEXT" BUTTON ---
-        // Create it once, but keep it hidden until a step is completed.
-        tutorialNextButton = SKLabelNode(fontNamed: "Menlo-Bold")
-        tutorialNextButton.text = "Next >"
-        tutorialNextButton.fontSize = 22
-        tutorialNextButton.fontColor = .gray
-        tutorialNextButton.position = CGPoint(x: 100, y: -40) // Positioned in the bottom-right of the card
-        tutorialNextButton.name = "tutorialNextButton"
-        //tutorialNextButton.isHidden = true // Start hidden
-        tutorialNode.addChild(tutorialNextButton)
-        
-        // Start the first step
-        completeTutorialStep()
-    }
-    
-    /// Moves the tutorial to the next step and updates the UI.
-    func advanceTutorial() {
-        
-        tutorialNextButton.fontColor = .gray
-        // Find the next step in our enum's list of cases.
-        if let currentIndex = TutorialStep.allCases.firstIndex(of: currentTutorialStep),
-           currentIndex + 1 < TutorialStep.allCases.count {
-            currentTutorialStep = TutorialStep.allCases[currentIndex + 1]
-        } else {
-            currentTutorialStep = .complete
-        }
-        
-        // Update the instruction image based on the new step.
-        switch currentTutorialStep {
-        case .welcome:
-            
-            tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
-        case .moveRight:
-            titleLabel.text = "Movement"
-            tutorialLabel.text = "Use the joystick to move left and right."
-        case .jump:
-            titleLabel.text = "Jumping"
-            tutorialLabel.text = "Push the joystick up to jump."
-        case .swipeUp:
-            titleLabel.text = "Boulder Pull"
-            tutorialLabel.text = "Swipe Up to pull up a boulder from the ground"
-            // Example of showing an optional image for this step
-            tutorialImage.texture = SKTexture(imageNamed: "swipeArrow")
-            tutorialImage.size = CGSize(width: 350, height: 350) // Set a size for the icon
-            tutorialImage.isHidden = false
-        case .quickAttack:
-            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x + 100, y: GameManager.shared.boulderFinalY))
-            titleLabel.text = "Quick Attack"
-            tutorialLabel.text = "Tap left/right side of the screen to shoot a rock piece"
-            tutorialImage.isHidden = true
-        case .strongAttack:
-            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x + 100, y: GameManager.shared.boulderFinalY))
-            titleLabel.text = "Strong Attack"
-            tutorialLabel.text = "Swipe right/left to launch the closest boulder"
-            tutorialImage.zRotation = -.pi / 2
-            tutorialImage.isHidden = false
-        case .splashAttack:
-            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x - 400, y: GameManager.shared.boulderFinalY))
-            titleLabel.text = "Splash Attack"
-            tutorialLabel.text = "Swipe down to launch a boulder for area damage."
-            tutorialImage.zRotation = .pi
-        case .littleRat:
-            enemiesManager.spawnSingleEnemy(type: .littleRat)
-            titleLabel.text = "Enemies"
-            tutorialLabel.text = "Litttle Rats dodge Strong attacks. Use your quick attack(TAP)!"
-            tutorialImage.isHidden = true
-        case .blocker:
-            enemiesManager.spawnSingleEnemy(type: .blocker)
-            titleLabel.text = "Enemies"
-            tutorialLabel.text = "Blocker shields block direct hits. Use a Splash Attack(Swipe Down) to break them!"
-        case .collectGem:
-            let gem = PickupNode(type: .coin)
-            gem.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
-            self.worldNode.addChild(gem)
-            titleLabel.text = "Pick Ups"
-            tutorialLabel.text = "Collect Gems from Enemies to increase your score and level up!"
-        case .medPack:
-            player.currentHealth = 50
-            hud.updateHealthBar(currentHealth: CGFloat(player.currentHealth), maxHealth: CGFloat(GameManager.shared.playerMaxHealth))
-            let med = PickupNode(type: .health)
-            med.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
-            self.worldNode.addChild(med)
-            
-            tutorialLabel.text = "Restore health only when damaged."
-        case .levelUp:
-            enemiesManager.spawnSingleEnemy(type: .normal)
-            GameManager.shared.currentScore = GameManager.shared.levelThresholdIncrements[0] - (GameManager.shared.normalEnemyValue + GameManager.shared.normalGemValue)
-            titleLabel.text = "Upgrades"
-            tutorialLabel.text = "When you level up, you get to choose an upgrade!"
-        case .finalMessage:
-            titleLabel.text = "Tutorial Complete"
-            tutorialLabel.text = "Time to use your ROCK MAGIC!"
-            completeTutorialStep()
-        case .complete:
-            isTutorialActive = false
-            GameManager.shared.reset()
-            enemiesManager.beginSpawning() // Tell the enemies to start
-            // The tutorial is over, so remove all its UI.
-            tutorialNode.removeFromParent()
-            skipButton.removeFromParent()
-        }
-    }
-    
-    // --- ADD THIS NEW FUNCTION ---
-    /// Called when the player completes the action for the current tutorial step.
-    /// This makes the "Next" button appear.
-    func completeTutorialStep() {
-        // Only show the button if the tutorial isn't over.
-        if currentTutorialStep != .complete {
-            tutorialNextButton.fontColor = .cyan
-        }
-    }
+//    /// Sets up the initial state of the tutorial UI.
+//    private func setupTutorial() {
+//        // Create a container for all tutorial UI
+//        tutorialNode = SKNode()
+//        tutorialNode.position = CGPoint(x: 0, y: 65) // Positioned above the player
+//        tutorialNode.zPosition = ZPositions.hud
+//        addChild(tutorialNode)
+//        
+//        // Create the semi-transparent background card
+//        let card = SKShapeNode(rectOf: CGSize(width: 300, height: 120), cornerRadius: 10)
+//        card.fillColor = .black.withAlphaComponent(0.7)
+//        card.strokeColor = .clear
+//        tutorialNode.addChild(card)
+//        
+//        // --- ADD THIS BLOCK to create the title ---
+//        titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+//        titleLabel.text = "Tutorial"
+//        titleLabel.fontSize = 22
+//        titleLabel.fontColor = .green
+//        // Position it at the top of the card
+//        titleLabel.position = CGPoint(x: 0, y: 35)
+//        tutorialNode.addChild(titleLabel)
+//        // -----------------------------------------
+//
+//        
+//        // Create the text label
+//        tutorialLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+//        tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
+//        tutorialLabel.fontSize = 16
+//        tutorialLabel.fontColor = .white
+//        tutorialLabel.numberOfLines = 0
+//        tutorialLabel.preferredMaxLayoutWidth = 280
+//        tutorialLabel.verticalAlignmentMode = .center
+//        tutorialNode.addChild(tutorialLabel)
+//        
+//        // Create the optional image node (initially hidden)
+//        tutorialImage = SKSpriteNode()
+//        tutorialImage.position = CGPoint(x: 200, y: -50) // Positioned above the text
+//        tutorialImage.isHidden = true
+//        tutorialNode.addChild(tutorialImage)
+//        
+//        // Create a "Skip" button (this part is the same)
+//        skipButton = SKLabelNode(fontNamed: "Menlo-Regular")
+//        skipButton.text = "Skip Tutorial"
+//        skipButton.fontSize = 20
+//        skipButton.fontColor = .cyan
+//        //skipButton.position = CGPoint(x: size.width / 3, y: size.height / 3)
+//        skipButton.position = CGPoint(x: 270, y: -150)
+//        skipButton.zPosition = ZPositions.hud
+//        skipButton.name = "skipButton"
+//        addChild(skipButton)
+//        
+//        // --- ADD THE NEW "NEXT" BUTTON ---
+//        // Create it once, but keep it hidden until a step is completed.
+//        tutorialNextButton = SKLabelNode(fontNamed: "Menlo-Bold")
+//        tutorialNextButton.text = "Next >"
+//        tutorialNextButton.fontSize = 22
+//        tutorialNextButton.fontColor = .gray
+//        tutorialNextButton.position = CGPoint(x: 100, y: -40) // Positioned in the bottom-right of the card
+//        tutorialNextButton.name = "tutorialNextButton"
+//        //tutorialNextButton.isHidden = true // Start hidden
+//        tutorialNode.addChild(tutorialNextButton)
+//        
+//        // Start the first step
+//        completeTutorialStep()
+//    }
+//    
+//    /// Moves the tutorial to the next step and updates the UI.
+//    func advanceTutorial() {
+//        
+//        tutorialNextButton.fontColor = .gray
+//        // Find the next step in our enum's list of cases.
+//        if let currentIndex = TutorialStep.allCases.firstIndex(of: currentTutorialStep),
+//           currentIndex + 1 < TutorialStep.allCases.count {
+//            currentTutorialStep = TutorialStep.allCases[currentIndex + 1]
+//        } else {
+//            currentTutorialStep = .complete
+//        }
+//        
+//        // Update the instruction image based on the new step.
+//        switch currentTutorialStep {
+//        case .welcome:
+//            
+//            tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
+//        case .moveRight:
+//            titleLabel.text = "Movement"
+//            tutorialLabel.text = "Use the joystick to move left and right."
+//        case .jump:
+//            titleLabel.text = "Jumping"
+//            tutorialLabel.text = "Push the joystick up to jump."
+//        case .swipeUp:
+//            titleLabel.text = "Boulder Pull"
+//            tutorialLabel.text = "Swipe Up to pull up a boulder from the ground"
+//            // Example of showing an optional image for this step
+//            tutorialImage.texture = SKTexture(imageNamed: "swipeArrow")
+//            tutorialImage.size = CGSize(width: 350, height: 350) // Set a size for the icon
+//            tutorialImage.isHidden = false
+//        case .quickAttack:
+//            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x + 100, y: GameManager.shared.boulderFinalY))
+//            titleLabel.text = "Quick Attack"
+//            tutorialLabel.text = "Tap left/right side of the screen to shoot a rock piece"
+//            tutorialImage.isHidden = true
+//        case .strongAttack:
+//            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x + 100, y: GameManager.shared.boulderFinalY))
+//            titleLabel.text = "Strong Attack"
+//            tutorialLabel.text = "Swipe right/left to launch the closest boulder"
+//            tutorialImage.zRotation = -.pi / 2
+//            tutorialImage.isHidden = false
+//        case .splashAttack:
+//            magicManager.pullUpBoulder(position: CGPoint(x: player.worldPosition.x - 400, y: GameManager.shared.boulderFinalY))
+//            titleLabel.text = "Splash Attack"
+//            tutorialLabel.text = "Swipe down to launch a boulder for area damage."
+//            tutorialImage.zRotation = .pi
+//        case .littleRat:
+//            enemiesManager.spawnSingleEnemy(type: .littleRat)
+//            titleLabel.text = "Enemies"
+//            tutorialLabel.text = "Litttle Rats dodge Strong attacks. Use your quick attack(TAP)!"
+//            tutorialImage.isHidden = true
+//        case .blocker:
+//            enemiesManager.spawnSingleEnemy(type: .blocker)
+//            titleLabel.text = "Enemies"
+//            tutorialLabel.text = "Blocker shields block direct hits. Use a Splash Attack(Swipe Down) to break them!"
+//        case .collectGem:
+//            let gem = PickupNode(type: .coin)
+//            gem.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
+//            self.worldNode.addChild(gem)
+//            titleLabel.text = "Pick Ups"
+//            tutorialLabel.text = "Collect Gems from Enemies to increase your score and level up!"
+//        case .medPack:
+//            player.currentHealth = 50
+//            hud.updateHealthBar(currentHealth: CGFloat(player.currentHealth), maxHealth: CGFloat(GameManager.shared.playerMaxHealth))
+//            let med = PickupNode(type: .health)
+//            med.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
+//            self.worldNode.addChild(med)
+//            
+//            tutorialLabel.text = "Restore health only when damaged."
+//        case .levelUp:
+//            enemiesManager.spawnSingleEnemy(type: .normal)
+//            GameManager.shared.currentScore = GameManager.shared.levelThresholdIncrements[0] - (GameManager.shared.normalEnemyValue + GameManager.shared.normalGemValue)
+//            titleLabel.text = "Upgrades"
+//            tutorialLabel.text = "When you level up, you get to choose an upgrade!"
+//        case .finalMessage:
+//            titleLabel.text = "Tutorial Complete"
+//            tutorialLabel.text = "Time to use your ROCK MAGIC!"
+//            completeTutorialStep()
+//        case .complete:
+//            isTutorialActive = false
+//            GameManager.shared.reset()
+//            enemiesManager.beginSpawning() // Tell the enemies to start
+//            // The tutorial is over, so remove all its UI.
+//            tutorialNode.removeFromParent()
+//            skipButton.removeFromParent()
+//        }
+//    }
+//    
+//    // --- ADD THIS NEW FUNCTION ---
+//    /// Called when the player completes the action for the current tutorial step.
+//    /// This makes the "Next" button appear.
+//    func completeTutorialStep() {
+//        // Only show the button if the tutorial isn't over.
+//        if currentTutorialStep != .complete {
+//            tutorialNextButton.fontColor = .cyan
+//        }
+//    }
     
 }
 
-// This enum defines every step of our tutorial.
-enum TutorialStep: CaseIterable {
-    case welcome
-    case moveRight
-    case jump
-    case swipeUp
-    case quickAttack
-    case strongAttack
-    case splashAttack
-    case littleRat
-    case blocker
-    case collectGem
-    case medPack
-    case levelUp
-    case finalMessage
-    case complete
-}
+
 
 
 extension CGPoint {

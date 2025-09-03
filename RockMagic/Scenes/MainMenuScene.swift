@@ -7,7 +7,8 @@
 
 // --- ADD THIS PROTOCOL at the top of the file ---
 protocol MainMenuSceneDelegate: AnyObject {
-    func mainMenuDidTapStart(_ scene: MainMenuScene)
+    //func mainMenuDidTapStart(_ scene: MainMenuScene)
+    func mainMenu(_ scene: MainMenuScene, didSelectMode mode: gameMode)
     func mainMenuDidTapHighScores(_ scene: MainMenuScene)
 }
 
@@ -43,19 +44,34 @@ class MainMenuScene: SKScene {
         titleLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.75)
         addChild(titleLabel)
         
-        let startButton = SKLabelNode(fontNamed: "Menlo-Regular")
-        startButton.text = "Start Game"
-        startButton.fontSize = 40
-        startButton.fontColor = .cyan
-        startButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.5)
-        startButton.name = "startButton"
-        addChild(startButton)
+//        let startButton = SKLabelNode(fontNamed: "Menlo-Regular")
+//        startButton.text = "Start Game"
+//        startButton.fontSize = 40
+//        startButton.fontColor = .cyan
+//        startButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.5)
+//        startButton.name = "startButton"
+//        addChild(startButton)
+        let survivalButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        survivalButton.text = "Survival"
+        survivalButton.fontSize = 40
+        survivalButton.fontColor = .cyan
+        survivalButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.55)
+        survivalButton.name = "survivalButton"
+        addChild(survivalButton)
+        
+        let defenseButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        defenseButton.text = "Defense"
+        defenseButton.fontSize = 40
+        defenseButton.fontColor = .cyan
+        defenseButton.position = CGPoint(x: self.size.width / 2, y: survivalButton.position.y - 60)
+        defenseButton.name = "defenseButton"
+        addChild(defenseButton)
         
         let instructionsButton = SKLabelNode(fontNamed: "Menlo-Regular")
         instructionsButton.text = "Instructions"
         instructionsButton.fontSize = 40
         instructionsButton.fontColor = .cyan
-        instructionsButton.position = CGPoint(x: self.size.width / 2, y: startButton.position.y - 60)
+        instructionsButton.position = CGPoint(x: self.size.width / 2, y: defenseButton.position.y - 60)
         instructionsButton.name = "instructionsButton"
         addChild(instructionsButton)
         
@@ -69,7 +85,7 @@ class MainMenuScene: SKScene {
         addChild(highScoresButton)
         
         // Keep a reference to the main buttons to easily hide/show them
-        mainMenuButtons = [titleLabel, startButton, instructionsButton, highScoresButton]
+        mainMenuButtons = [titleLabel, survivalButton, defenseButton, instructionsButton, highScoresButton]
         // --- Setup the hidden instructions overlay ---
         setupInstructionsOverlay()
     }
@@ -164,8 +180,13 @@ class MainMenuScene: SKScene {
         let location = touch.location(in: self)
         let tappedNode = nodes(at: location).first
         
-        if tappedNode?.name == "startButton" {
-            startGame()
+        // --- THE FIX: Handle the new buttons ---
+        if tappedNode?.name == "survivalButton" {
+            // Tell the delegate to start a survival game.
+            menuDelegate?.mainMenu(self, didSelectMode: .survival)
+        } else if tappedNode?.name == "defenseButton" {
+            // Tell the delegate to start a defense game.
+            menuDelegate?.mainMenu(self, didSelectMode: .defense)
         } else if tappedNode?.name == "instructionsButton" {
             showInstructions()
         } else if tappedNode?.name == "backButton" {
@@ -199,11 +220,11 @@ class MainMenuScene: SKScene {
 //        self.view?.presentScene(gameScene, transition: transition)
 //    }
     
-    private func startGame() {
-        print("Start button tapped. Notifying delegate...")
-        // Instead of creating the scene here, we tell our delegate to do it.
-        menuDelegate?.mainMenuDidTapStart(self)
-    }
+//    private func startGame() {
+//        print("Start button tapped. Notifying delegate...")
+//        // Instead of creating the scene here, we tell our delegate to do it.
+//        menuDelegate?.mainMenuDidTapStart(self)
+//    }
     
     private func showHighScores() {
         menuDelegate?.mainMenuDidTapHighScores(self)

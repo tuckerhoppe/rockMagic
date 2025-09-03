@@ -42,8 +42,10 @@ class EnemyNode: SKSpriteNode {
     let walkFrames = (1...5).map { SKTexture(imageNamed: "badGuyR\($0)") }
     var moveSpeed: CGFloat = GameManager.shared.enemyMoveSpeed
     var myMoveSpeed: CGFloat = 0.0
-    var stoppingDistance: CGFloat = 25.0 // NEW: How close to get before stopping
+    var stoppingDistance: CGFloat = 35 // NEW: How close to get before stopping
     var positionalOffset: CGFloat = 0.0
+    
+    var originalFriction: CGFloat = 0.5 // A default value
     
     private var lastAttackTime: TimeInterval = 0
     var lastContactDamageTime: TimeInterval = 0
@@ -54,6 +56,8 @@ class EnemyNode: SKSpriteNode {
     var isInvulnerable = false // Prevents damage spam
     var justTossed = false
     var damage: Int = 1
+    
+    var isOnPillar: Bool = false
     
     var shield: Bool = false
     private var shieldSprite: SKSpriteNode!
@@ -66,6 +70,8 @@ class EnemyNode: SKSpriteNode {
     private let healthBarHeight: CGFloat = 6
     
     var enemyType: EnemyType = .normal
+    
+    var primaryObjective: Damageable?
     
 //    init() {
 //        
@@ -157,7 +163,7 @@ class EnemyNode: SKSpriteNode {
         shieldSprite.isHidden = true // Start hidden
         addChild(shieldSprite)
         // ------------------------------------------
-        
+        //addDebugAttackRange()
         
         
         // --- Configure the enemy based on its type ---
@@ -183,7 +189,7 @@ class EnemyNode: SKSpriteNode {
             self.setScale(0.65)
             self.color = .red
             self.colorBlendFactor = 0.3
-            print("Little Rat spawned!")
+            //print("Little Rat spawned!")
             
         case .bigBoy:
             self.moveSpeed *= 0.5
@@ -193,7 +199,7 @@ class EnemyNode: SKSpriteNode {
             self.setScale(1.75)
             self.color = .blue
             self.colorBlendFactor = 0.3
-            print("Big Boy spawned!")
+            //print("Big Boy spawned!")
             
         case .blocker:
             self.moveSpeed *= 0.75
@@ -201,7 +207,7 @@ class EnemyNode: SKSpriteNode {
             self.setScale(0.9)
             self.color = .yellow
             self.colorBlendFactor = 0.4
-            print("Blocker spawned!")
+            //print("Blocker spawned!")
             
         case .normal:
             // No changes needed for a normal enemy
@@ -227,6 +233,23 @@ class EnemyNode: SKSpriteNode {
     func updateShieldVisibility() {
         shieldSprite.isHidden = !shield
     }
+    
+    /// If the enemy is on a pillar, this function applies a continuous force to slide it off.
+    func applyPillarSlideForce() {
+        // Only apply the force if the flag is true.
+        guard isOnPillar else { return }
+
+        // Determine which direction to slide based on the enemy's position relative to the scene's center.
+        // This is a simple way to ensure they always slide outwards.
+        let slideDirection: CGFloat = (self.position.x < 0) ? -1.0 : 1.0
+        
+        let slideForce: CGFloat = 115.0 // A small, continuous force
+        let forceVector = CGVector(dx: slideForce * slideDirection, dy: 0)
+        
+        self.currentState = .tossed
+        // Use applyForce, which is designed for continuous application in an update loop.
+        self.physicsBody?.applyForce(forceVector)
+    }
 
     
     // --- ADD THIS NEW ATTACK FUNCTION ---
@@ -248,20 +271,46 @@ class EnemyNode: SKSpriteNode {
 //    }
     
     // --- UPDATE THE ATTACK FUNCTION ---
-    private func attack(target: PlayerNode) {
+    private func attack(target: Damageable) {
         // 1. Check if the attack is off cooldown.
-        let currentTime = CACurrentMediaTime()
-        guard currentTime - lastAttackTime > GameManager.shared.enemyAttackCooldown else { return }
+//        let currentTime = CACurrentMediaTime()
+//        guard currentTime - lastAttackTime > GameManager.shared.enemyAttackCooldown else { return }
+        let targetX: CGFloat
         
+        // 1. Check if the objective is a PlayerNode.
+        if let player = target as? PlayerNode {
+            // If yes, use its special worldPosition property.
+            targetX = player.worldPosition.x
+        } else {
+            // 2. Otherwise (its an SKNode), use its normal position.
+            targetX = target.position.x
+        }
         // 2. Check if the player is still in range.
         let attackRange = GameManager.shared.enemyAttackRange
-        let distance = abs(self.position.x - target.worldPosition.x)
+        //let distance = abs(self.position.x - targetX)
+        let distance: CGFloat
+        
+        if let pillar = target as? PillarNode {
+            let pillarWidth = pillar.frame.width
+            let enemyWidth = self.frame.width
+//            print("pillarWidth",pillarWidth)
+//            print("enemyWIdth", enemyWidth)
+            // 2. Calculate the distance between their centers.
+            let centerToCenterDistance = abs(self.position.x - pillar.position.x)
+
+            // 3. Subtract half of each object's width to get the distance between their edges.
+            let distanceToPillarEdge = centerToCenterDistance - (pillarWidth / 2) - (enemyWidth / 2)
+            
+            distance = distanceToPillarEdge
+        } else {
+            distance = abs(self.position.x - targetX)
+        }
         
         if distance <= attackRange {
             // 3. If both checks pass, update the timer and deal damage.
-            lastAttackTime = currentTime
+            //lastAttackTime = currentTime
             
-            //print("Enemy attacks player!")
+            //print("Enemy attacks object!")
             target.takeDamage(amount: self.damage)
             
             if let gameScene = self.scene as? GameScene {
@@ -343,7 +392,7 @@ class EnemyNode: SKSpriteNode {
         // If health is zero, enter the 'dying' state.
         // The node is NOT removed yet. The toss will still happen.
         if currentHealth <= 0 {
-            currentState = .dying
+            //currentState = .dying
             healthBarBackground.run(SKAction.fadeOut(withDuration: 0.01))
         }
     }
@@ -354,11 +403,11 @@ class EnemyNode: SKSpriteNode {
         // 1. Safely cast the scene to a GameScene.
         if let gameScene = self.scene as? GameScene {
             // 2. Check if the tutorial is on the "kill enemy" step.
-            if gameScene.currentTutorialStep == .littleRat && self.enemyType == .littleRat {
+            if gameScene.tutorialManager.currentTutorialStep == .littleRat && self.enemyType == .littleRat {
                 // 3. If yes, complete the step.
-                gameScene.completeTutorialStep()
-            } else if gameScene.currentTutorialStep == .blocker && self.enemyType == .blocker {
-                gameScene.completeTutorialStep()
+                gameScene.tutorialManager.completeTutorialStep()
+            } else if gameScene.tutorialManager.currentTutorialStep == .blocker && self.enemyType == .blocker {
+                gameScene.tutorialManager.completeTutorialStep()
             }
         }
         
@@ -404,7 +453,7 @@ class EnemyNode: SKSpriteNode {
         
     }
 
-    func setAnimationState(to newState: EnemyState, target: PlayerNode? = nil) {
+    func setAnimationState(to newState: EnemyState, target: Damageable? = nil) {
         // Don't do anything if we're already in this state
         if currentState == newState { return }
         
@@ -425,15 +474,18 @@ class EnemyNode: SKSpriteNode {
             
             guard let attackTarget = target else { return }
             
-            // if player is walking
-            if attackTarget.isWalking {
+            
+            
+            if let player = attackTarget as? PlayerNode, player.isWalking {
+                // if player is walking
+                
                 // Walking Attack
                 //print("attacking!")
 //
 //                run(sequence, withKey: "animation")
                 let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
                 let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
-                let wait = SKAction.wait(forDuration: 0.25)
+                let wait = SKAction.wait(forDuration: 0.5)
                 
                 let runAttack = SKAction.run { [weak self] in
                     self?.attack(target: attackTarget)
@@ -443,24 +495,19 @@ class EnemyNode: SKSpriteNode {
                 self.attackAction = SKAction.repeatForever(sequence)
                 run(attackAction, withKey: "animation")
                 
-                let distance = abs(self.position.x - attackTarget.worldPosition.x)
+                let distance = abs(self.position.x - player.worldPosition.x)
                 
                 if distance < 30 && self.moveSpeed > 250.0 {
                     self.moveSpeed = 250.0
-                    print("first one! player MOve speed: ", GameManager.shared.playerMoveSpeed)
+                    //print("first one! player MOve speed: ", GameManager.shared.playerMoveSpeed)
                 }
-//                else {
-//                    self.moveSpeed = myMoveSpeed
-//                    print("second one! enemy MOve speed: ",GameManager.shared.enemyMoveSpeed)
-//                }
-                
-                //print("move speed: ", self.moveSpeed)
+
                 walkToTarget(objective: attackTarget)
-                
+                    
+                    
                 
             } else {
-                // --- Idle Attack (Stationary) ---
-                //print("Enemy performs an idle attack!")
+                
                 
                 physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
                 // This is your existing stationary attack loop.
@@ -476,6 +523,8 @@ class EnemyNode: SKSpriteNode {
                 self.attackAction = SKAction.repeatForever(sequence)
                 run(attackAction, withKey: "animation")
             }
+            
+            
             
         case .idle:
 //            if let attackTarget = target {
@@ -654,8 +703,9 @@ class EnemyNode: SKSpriteNode {
         damageToDeal = Int(damageWithSizeBonus)
         //print("damage to deal after bonus: \(damageToDeal)")
 
-        takeDamage(amount: damageToDeal, contactPoint: self.position, largeStrike: rockPiece.isAttached)
         enemyBody.applyImpulse(finalImpulse)
+        takeDamage(amount: damageToDeal, contactPoint: self.position, largeStrike: rockPiece.isAttached)
+        
         
     }
 
@@ -688,31 +738,31 @@ class EnemyNode: SKSpriteNode {
     }
     
     
-    // --- REPLACE this function ---
-    func moveTowardsNEW(objective: PlayerNode) {
-        // The "Brain" of the enemy.
-        if currentState == .tossed || currentState == .dying { return }
-        guard let physicsBody = self.physicsBody else { return }
-        
-        let distance = abs(self.position.x - objective.worldPosition.x)
-        
-        // If the player is in range, the enemy's only job is to attack.
-        if distance <= GameManager.shared.enemyAttackRange {
-            setAnimationState(to: .attacking, target: objective)
-            // Stop moving to perform the attack.
-            physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
-            
-            
-        } else {
-            // If the player is out of range, the enemy's only job is to walk.
-            setAnimationState(to: .walking)
-            let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
-            self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
-            physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
-        }
-    }
+//    // --- REPLACE this function ---
+//    func moveTowardsNEW(objective: PlayerNode) {
+//        // The "Brain" of the enemy.
+//        if currentState == .tossed || currentState == .dying { return }
+//        guard let physicsBody = self.physicsBody else { return }
+//        
+//        let distance = abs(self.position.x - objective.worldPosition.x)
+//        
+//        // If the player is in range, the enemy's only job is to attack.
+//        if distance <= GameManager.shared.enemyAttackRange {
+//            setAnimationState(to: .attacking, target: objective)
+//            // Stop moving to perform the attack.
+//            physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
+//            
+//            
+//        } else {
+//            // If the player is out of range, the enemy's only job is to walk.
+//            setAnimationState(to: .walking)
+//            let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
+//            self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
+//            physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
+//        }
+//    }
 
-    func moveTowards(objective: PlayerNode) {
+    func moveTowardsOLD(objective: PlayerNode) {
         
         guard currentState != .tossed && currentState != .dying else { return }
         
@@ -737,9 +787,96 @@ class EnemyNode: SKSpriteNode {
         }
     }
     
-    func walkToTarget(objective: PlayerNode) {
+    func moveTowards(objective: Damageable) {
+        if currentState == .tossed || currentState == .dying { return }
+        
+        // --- THE FIX: The enemy now checks its path before moving ---
+        var targetX: CGFloat
+        if let player = objective as? PlayerNode {
+            // If yes, use its special worldPosition property.
+            targetX = player.worldPosition.x
+        } else {
+            // 2. Otherwise (its an SKNode), use its normal position.
+            targetX = objective.position.x
+        }
+        
+        // 1. Check if a pillar is blocking the path to the player.
+        if let blockingPillar = isPathToTargetBlocked(byPillar: objective) {
+            //print("path is blocked")
+            // If the path is blocked, attack the pillar instead.
+            // We can reuse the 'attacking' state, but we need a way to attack non-player nodes.
+            // For now, we'll just stop the enemy in front of the pillar.
+            
+            // 1. Get the widths of the two objects.
+            let pillarWidth = blockingPillar.rectangle.size.width
+                let enemyWidth = self.size.width
+//            print("pillarWidth",pillarWidth)
+//            print("enemyWIdth", enemyWidth)
+            // 2. Calculate the distance between their centers.
+            let centerToCenterDistance = abs(self.position.x - blockingPillar.position.x)
+
+            // 3. Subtract half of each object's width to get the distance between their edges.
+            let distanceToPillarEdge = centerToCenterDistance - (pillarWidth / 2) - (enemyWidth / 2)
+            
+            let distanceToPillar = abs(self.position.x - blockingPillar.position.x)
+//            print("distance to pillar: ", distanceToPillar)
+//            print("stopping distance: ", stoppingDistance)
+//            print("distance to pillarEDge: ", distanceToPillarEdge)
+//            print("stopping distance: ", stoppingDistance)
+//            print("distanceToPillarEdge <= stoppingDistance = ", distanceToPillarEdge <= stoppingDistance)
+            if distanceToPillarEdge <= stoppingDistance {
+                // Stop and attack the pillar (we can add a dedicated attack later)
+                
+                //print("within distance and set to attacking!")
+                setAnimationState(to: .attacking, target: blockingPillar)
+                physicsBody?.velocity = CGVector(dx: 0, dy: physicsBody?.velocity.dy ?? 0)
+                
+            } else {
+                // Walk towards the pillar
+                setAnimationState(to: .walking)
+                walkToTarget(objective: blockingPillar)
+            }
+            
+        } else {
+            // 2. If the path is clear, use the normal logic to chase the player.
+            
+            let distance = abs(self.position.x - targetX)
+            if distance <= stoppingDistance {
+                setAnimationState(to: .attacking, target: objective)
+            } else {
+                setAnimationState(to: .walking)
+                walkToTarget(objective: objective)
+            }
+        }
+    }
+    
+//    func walkToTarget(objective: PlayerNode) {
+//        guard let physicsBody = self.physicsBody else { return }
+//        let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
+//        
+//        self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
+//        physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
+//    }
+    
+    // In EnemyNode.swift
+
+    func walkToTarget(objective: SKNode) {
         guard let physicsBody = self.physicsBody else { return }
-        let direction: CGFloat = (objective.worldPosition.x < self.position.x) ? -1.0 : 1.0
+        
+        // --- THE FIX: Get the correct target position based on the node's type ---
+        let targetX: CGFloat
+        
+        // 1. Check if the objective is a PlayerNode.
+        if let player = objective as? PlayerNode {
+            // If yes, use its special worldPosition property.
+            targetX = player.worldPosition.x
+        } else {
+            // 2. Otherwise (its an SKNode), use its normal position.
+            targetX = objective.position.x
+        }
+        
+        // 3. Use the corrected targetX for the direction calculation.
+        let direction: CGFloat = (targetX < self.position.x) ? -1.0 : 1.0
         
         self.xScale = (direction < 0) ? -abs(self.xScale) : abs(self.xScale)
         physicsBody.velocity = CGVector(dx: moveSpeed * direction, dy: physicsBody.velocity.dy)
@@ -757,11 +894,106 @@ class EnemyNode: SKSpriteNode {
         // Physics categories
         self.physicsBody?.categoryBitMask = PhysicsCategory.enemy
         
-        physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge //| PhysicsCategory.rockPiece
-        physicsBody?.contactTestBitMask = PhysicsCategory.player | PhysicsCategory.bullet | PhysicsCategory.ground | PhysicsCategory.boulder
+        self.originalFriction = self.physicsBody?.friction ?? 0.5
+        
+        physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge | PhysicsCategory.pillar//| PhysicsCategory.rockPiece
+        physicsBody?.contactTestBitMask = PhysicsCategory.player | PhysicsCategory.bullet | PhysicsCategory.ground | PhysicsCategory.boulder | PhysicsCategory.pillar
+    }
+    
+    
+    /// Checks if a pillar is blocking the path to a target.
+    /// - Parameter target: The node the enemy is trying to see (the player).
+    /// - Returns: The PillarNode that is blocking the path, or nil if the path is clear.
+    func isPathToTargetBlocked(byPillar target: SKNode) -> PillarNode? {
+        // 1. Safely get the scene so we can access its nodes.
+        guard let gameScene = self.scene as? GameScene else { return nil }
+
+        // 2. Get the x-position of the enemy and its target.
+        let enemyX = self.position.x
+        let targetX: CGFloat
+        if let player = target as? PlayerNode {
+            targetX = player.worldPosition.x
+        } else {
+            targetX = target.position.x
+        }
+
+        // 3. Find all pillars that are between the enemy and the target.
+        var potentialBlockers: [PillarNode] = []
+        for node in gameScene.worldNode.children {
+            if let pillar = node as? PillarNode {
+                let pillarX = pillar.position.x
+                // Check if the pillar's x-position is between the enemy and the target.
+                let isBetween = (pillarX > enemyX && pillarX < targetX) || (pillarX < enemyX && pillarX > targetX)
+                
+                if isBetween {
+                    // We will also do a simple height check. If the enemy is significantly higher
+                    // than the pillar, we can assume they have a clear line of sight over it.
+                    // This prevents enemies from getting stuck on very short pillars.
+                    let enemyBottom = self.position.y - (self.size.height / 2)
+                    let pillarTop = pillar.position.y + (pillar.rectangle.size.height / 2)
+                    
+                    if enemyBottom < pillarTop {
+                        potentialBlockers.append(pillar)
+                    }
+                }
+            }
+        }
+
+        // 4. If there are no potential blockers, the path is clear.
+        guard !potentialBlockers.isEmpty else { return nil }
+
+        // 5. If there are multiple blocking pillars, find and return the one closest to the enemy.
+        var closestPillar: PillarNode?
+        var minDistance = CGFloat.greatestFiniteMagnitude
+
+        for pillar in potentialBlockers {
+            let distance = abs(self.position.x - pillar.position.x)
+            if distance < minDistance {
+                minDistance = distance
+                closestPillar = pillar
+            }
+        }
+        
+        return closestPillar
+    }
+    
+    private func addDebugAttackRange() {
+        let attackRange = GameManager.shared.enemyAttackRange
+        
+        let circle = SKShapeNode(circleOfRadius: stoppingDistance)
+        circle.strokeColor = .red
+        circle.lineWidth = 2
+        circle.fillColor = .red.withAlphaComponent(0.2)
+        circle.zPosition = -1 // Draw it behind the enemy
+        addChild(circle)
     }
 
 
     
     
+}
+
+
+// In EnemyNode.swift (or a new file for extensions)
+
+// A helper extension to perform the line-circle intersection test.
+extension CGPath {
+    static func lineSegment(start: CGPoint, end: CGPoint, intersectsCircle circleCenter: CGPoint, radius: CGFloat) -> Bool {
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        let a = dx*dx + dy*dy
+        let b = 2 * (dx * (start.x - circleCenter.x) + dy * (start.y - circleCenter.y))
+        let c = (start.x - circleCenter.x)*(start.x - circleCenter.x) + (start.y - circleCenter.y)*(start.y - circleCenter.y) - radius*radius
+        
+        var discriminant = b*b - 4*a*c
+        if discriminant < 0 {
+            return false
+        }
+        
+        discriminant = sqrt(discriminant)
+        let t1 = (-b - discriminant) / (2*a)
+        let t2 = (-b + discriminant) / (2*a)
+        
+        return (t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1)
+    }
 }

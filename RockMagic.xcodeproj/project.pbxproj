@@ -27,6 +27,8 @@
 		B105A5F72DC718AD006F1FC4 /* MagicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B105A5F62DC718AD006F1FC4 /* MagicManager.swift */; };
 		B105A5FA2DC7FD23006F1FC4 /* BoulderNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B105A5F92DC7FD23006F1FC4 /* BoulderNode.swift */; };
 		B105A6E92DF4FDFF006F1FC4 /* TestScene_EnemyToss.swift in Sources */ = {isa = PBXBuildFile; fileRef = B105A6E82DF4FDFF006F1FC4 /* TestScene_EnemyToss.swift */; };
+		B114F9882E64233000EC0440 /* BoulderHutNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B114F9872E64232900EC0440 /* BoulderHutNode.swift */; };
+		B1397AD92E5EA7C000C99D80 /* Protocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1397AD82E5EA7B900C99D80 /* Protocols.swift */; };
 		B15C975E2E36CBC1003306EB /* PickupNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15C975D2E36CBC1003306EB /* PickupNode.swift */; };
 		B15C97872E397AF0003306EB /* ImageGalleryNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15C97862E397AF0003306EB /* ImageGalleryNode.swift */; };
 		B172ACD82E4C3AC10013B108 /* UpgradeMenuNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACD72E4C3ABD0013B108 /* UpgradeMenuNode.swift */; };
@@ -34,6 +36,8 @@
 		B172ACDC2E4FDAAB0013B108 /* ViewUpgradesNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACDB2E4FDA9D0013B108 /* ViewUpgradesNode.swift */; };
 		B172ACDF2E5008200013B108 /* CloudKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACDE2E5008140013B108 /* CloudKitManager.swift */; };
 		B172ACE12E5008780013B108 /* HighScoreScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACE02E50086A0013B108 /* HighScoreScene.swift */; };
+		B172ACE32E5989DA0013B108 /* TutorialManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACE22E5989D30013B108 /* TutorialManager.swift */; };
+		B172ACE52E5D1F850013B108 /* PillarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACE42E5D1F800013B108 /* PillarNode.swift */; };
 		B175121E2E297D0E00621AFC /* SetupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B175121D2E297D0E00621AFC /* SetupManager.swift */; };
 		B17512202E2983F000621AFC /* EnemiesManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B175121F2E2983F000621AFC /* EnemiesManager.swift */; };
 		B17512222E2987E000621AFC /* InputManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17512212E2987E000621AFC /* InputManager.swift */; };
@@ -88,6 +92,8 @@
 		B105A5F82DC7F6CE006F1FC4 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B105A5F92DC7FD23006F1FC4 /* BoulderNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoulderNode.swift; sourceTree = "<group>"; };
 		B105A6E82DF4FDFF006F1FC4 /* TestScene_EnemyToss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestScene_EnemyToss.swift; sourceTree = "<group>"; };
+		B114F9872E64232900EC0440 /* BoulderHutNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoulderHutNode.swift; sourceTree = "<group>"; };
+		B1397AD82E5EA7B900C99D80 /* Protocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocols.swift; sourceTree = "<group>"; };
 		B15C975D2E36CBC1003306EB /* PickupNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupNode.swift; sourceTree = "<group>"; };
 		B15C97862E397AF0003306EB /* ImageGalleryNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGalleryNode.swift; sourceTree = "<group>"; };
 		B172ACD72E4C3ABD0013B108 /* UpgradeMenuNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeMenuNode.swift; sourceTree = "<group>"; };
@@ -96,6 +102,8 @@
 		B172ACDD2E5002690013B108 /* RockMagic.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RockMagic.entitlements; sourceTree = "<group>"; };
 		B172ACDE2E5008140013B108 /* CloudKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitManager.swift; sourceTree = "<group>"; };
 		B172ACE02E50086A0013B108 /* HighScoreScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighScoreScene.swift; sourceTree = "<group>"; };
+		B172ACE22E5989D30013B108 /* TutorialManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialManager.swift; sourceTree = "<group>"; };
+		B172ACE42E5D1F800013B108 /* PillarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillarNode.swift; sourceTree = "<group>"; };
 		B175121D2E297D0E00621AFC /* SetupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupManager.swift; sourceTree = "<group>"; };
 		B175121F2E2983F000621AFC /* EnemiesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnemiesManager.swift; sourceTree = "<group>"; };
 		B17512212E2987E000621AFC /* InputManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputManager.swift; sourceTree = "<group>"; };
@@ -207,6 +215,8 @@
 				B105A5032DC078E0006F1FC4 /* PlayerNode.swift */,
 				B175122B2E30882300621AFC /* PauseMenuNode.swift */,
 				B105A5F92DC7FD23006F1FC4 /* BoulderNode.swift */,
+				B172ACE42E5D1F800013B108 /* PillarNode.swift */,
+				B114F9872E64232900EC0440 /* BoulderHutNode.swift */,
 				B15C975D2E36CBC1003306EB /* PickupNode.swift */,
 				B105A5F42DC42C73006F1FC4 /* EnemyNode.swift */,
 				B175122D2E31620000621AFC /* GameOverNode.swift */,
@@ -225,6 +235,7 @@
 			children = (
 				B105A5012DC07858006F1FC4 /* Constants.swift */,
 				B105A5072DC08935006F1FC4 /* PhysicsCategories.swift */,
+				B1397AD82E5EA7B900C99D80 /* Protocols.swift */,
 				B105A5F62DC718AD006F1FC4 /* MagicManager.swift */,
 			);
 			path = Systems;
@@ -242,6 +253,7 @@
 			isa = PBXGroup;
 			children = (
 				B175121D2E297D0E00621AFC /* SetupManager.swift */,
+				B172ACE22E5989D30013B108 /* TutorialManager.swift */,
 				B175122F2E31764100621AFC /* AnimationManager.swift */,
 				B172ACDE2E5008140013B108 /* CloudKitManager.swift */,
 				B172ACD92E4E79660013B108 /* EffectManager.swift */,
@@ -399,7 +411,9 @@
 				B172ACDA2E4E79690013B108 /* EffectManager.swift in Sources */,
 				B17512202E2983F000621AFC /* EnemiesManager.swift in Sources */,
 				B105A6E92DF4FDFF006F1FC4 /* TestScene_EnemyToss.swift in Sources */,
+				B172ACE32E5989DA0013B108 /* TutorialManager.swift in Sources */,
 				B105A4CC2DC072FF006F1FC4 /* AppDelegate.swift in Sources */,
+				B1397AD92E5EA7C000C99D80 /* Protocols.swift in Sources */,
 				B175122E2E31620000621AFC /* GameOverNode.swift in Sources */,
 				B17512242E2991C500621AFC /* CollisionMaganer.swift in Sources */,
 				B172ACE12E5008780013B108 /* HighScoreScene.swift in Sources */,
@@ -408,10 +422,12 @@
 				B172ACDF2E5008200013B108 /* CloudKitManager.swift in Sources */,
 				B105A5082DC08935006F1FC4 /* PhysicsCategories.swift in Sources */,
 				B17512262E30194A00621AFC /* HUDNode.swift in Sources */,
+				B172ACE52E5D1F850013B108 /* PillarNode.swift in Sources */,
 				B105A5042DC078E0006F1FC4 /* PlayerNode.swift in Sources */,
 				B105A5F72DC718AD006F1FC4 /* MagicManager.swift in Sources */,
 				B105A5F52DC42C73006F1FC4 /* EnemyNode.swift in Sources */,
 				B17512302E31764100621AFC /* AnimationManager.swift in Sources */,
+				B114F9882E64233000EC0440 /* BoulderHutNode.swift in Sources */,
 				B105A5062DC079A1006F1FC4 /* ScrollingBackgroundNode.swift in Sources */,
 				B15C97872E397AF0003306EB /* ImageGalleryNode.swift in Sources */,
 				B172ACDC2E4FDAAB0013B108 /* ViewUpgradesNode.swift in Sources */,

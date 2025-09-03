@@ -104,16 +104,35 @@ class GameViewController: UIViewController, GameSceneDelegate, MainMenuSceneDele
     
     // --- 3. IMPLEMENT THE NEW DELEGATE FUNCTION ---
     // This function will be called when the start button is tapped in the menu.
-    func mainMenuDidTapStart(_ scene: MainMenuScene) {
+//    func mainMenuDidTapStart(_ scene: MainMenuScene) {
+//        guard let view = self.view as? SKView else { return }
+//        
+//        // 1. Create the GameScene here.
+//        if let gameScene = GameScene(fileNamed: "GameScene") {
+//            
+//            // 2. Correctly set its delegate.
+//            gameScene.gameDelegate = self
+//            isShowingHighScoreAlert = false
+//            // 3. Present the fully configured scene.
+//            gameScene.scaleMode = .aspectFill
+//            let transition = SKTransition.fade(withDuration: 1.0)
+//            view.presentScene(gameScene, transition: transition)
+//        }
+//    }
+    
+    // In GameViewController.swift
+
+    // --- REPLACE mainMenuDidTapStart with this new function ---
+    func mainMenu(_ scene: MainMenuScene, didSelectMode mode: gameMode) {
+        // 1. Set the game mode in the GameManager.
+        GameManager.shared.currentGameMode = mode
+        
+        // 2. The rest of the logic is the same as before.
         guard let view = self.view as? SKView else { return }
         
-        // 1. Create the GameScene here.
         if let gameScene = GameScene(fileNamed: "GameScene") {
-            
-            // 2. Correctly set its delegate.
             gameScene.gameDelegate = self
             isShowingHighScoreAlert = false
-            // 3. Present the fully configured scene.
             gameScene.scaleMode = .aspectFill
             let transition = SKTransition.fade(withDuration: 1.0)
             view.presentScene(gameScene, transition: transition)

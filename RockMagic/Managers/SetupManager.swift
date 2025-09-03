@@ -15,7 +15,7 @@ class SetupManager {
         self.scene = scene
     }
     
-    func setupAll(view: SKView) {
+    func setupAll(view: SKView, gameMode: gameMode) {
         //setupBackground()
         setupParallaxBackgrounds()
         setupPhysics()
@@ -29,6 +29,13 @@ class SetupManager {
         setupMagic()
         
         setupWorldBoundaries()
+        
+        switch gameMode {
+        case .survival:
+            break
+        case .defense:
+            setupDefenseMode()
+        }
     }
     
     private func setupPhysics() {
@@ -232,6 +239,18 @@ class SetupManager {
         let enemiesManager = EnemiesManager(scene: scene)
         scene.enemiesManager = enemiesManager
         //enemiesManager.startSpawningEnemies()
+    }
+    
+    // In SetupManager.swift
+
+    private func setupDefenseMode() {
+        // 1. Create the object to defend.
+        let boulderHut = BoulderHutNode()
+        boulderHut.position = CGPoint(x: 0, y: GameManager.shared.groundLevel + 40)
+        scene.worldNode.addChild(boulderHut)
+        
+        // 2. Tell the EnemiesManager that this is the objective.
+        scene.enemiesManager.objective = boulderHut
     }
     
     
