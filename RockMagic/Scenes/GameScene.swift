@@ -78,6 +78,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var gameOverMenu: GameOverNode!
     
+    /// A special node that will not be affected when the scene is paused.
+    /// This is used to run timers and animations for menus.
+    private var unpausableNode: SKNode!
+    
     /// A flag to prevent accidental taps on the game over menu.
     var isGameOverInteractable = false
     
@@ -117,9 +121,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func didMove(to view: SKView) {
         
-        // PLEASE DELETEME
-        screenBoundaryLeft = -4
-        screenBoundaryRight = 4
+        // --- ADD THIS BLOCK to create the unpausable node ---
+        unpausableNode = SKNode()
+        addChild(unpausableNode)
+        
+        
+        screenBoundaryLeft = 6
+        screenBoundaryRight = 14
         
         //--- All game Modes: ---
         backgroundColor = .cyan
@@ -514,7 +522,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             self.isPaused = true
             self.upgradeMenu = UpgradeMenuNode(size: self.size)
-            self.upgradeMenu.zPosition = ZPositions.hud + 30
+            self.upgradeMenu.zPosition = ZPositions.hud + 10
             self.addChild(self.upgradeMenu)
         }
         
@@ -533,9 +541,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         playerTookDamage() // Update the HUD
     }
 
-    func showGameOverMenu() {
+    func showGameOverMenu(message: String = "You Died") {
         // 1. Immediately display the game over node. This ensures it always appears.
-        self.displayGameOverNode()
+        //self.displayGameOverNode()
+        
+        // 1. Immediately display the red message on the screen.
+        showTemporaryMessage(message: message, color: .red)
+        worldNode.isPaused = true
+        
+        // 1. Create the action that will display the game over node.
+           let showMenuAction = SKAction.run { [weak self] in
+               self?.displayGameOverNode()
+           }
+
+           // 2. Create a 1-second wait action.
+           let wait = SKAction.wait(forDuration: 1.0)
+
+           // 3. Create a sequence to wait, then show the menu.
+           let sequence = SKAction.sequence([wait, showMenuAction])
+
+           // 4. Run the sequence on the unpausableNode to ensure the timer
+           //    works even if other parts of the scene are paused.
+           unpausableNode.run(sequence)
 
         // 2. Separately, check for a high score in the background.
         CloudKitManager.shared.fetchHighScores { [weak self] (scores, error) in
@@ -590,13 +617,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         print("GAME OVER NODE DISPLAYED")
         
         // --- ADD THIS LOGIC ---
-        // Start a 1-second timer. The menu will only be interactable after it finishes.
-//        let wait = SKAction.wait(forDuration: 1.0)
+         //Start a 1-second timer. The menu will only be interactable after it finishes.
+//        let wait = SKAction.wait(forDuration: 5.0)
 //        let makeInteractable = SKAction.run { [weak self] in
 //            self?.isGameOverInteractable = true
 //            print("Ok it should be interactable now!")
 //        }
 //        self.run(SKAction.sequence([wait, makeInteractable]))
+    }
+    
+    // In GameScene.swift
+
+    /// Displays a large, temporary message in the center of the screen that fades out.
+    private func showTemporaryMessage(message: String, color: UIColor) {
+        let messageLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        messageLabel.text = message
+        messageLabel.fontColor = color
+        messageLabel.fontSize = 45
+        messageLabel.position = .zero // Center of the scene
+        messageLabel.zPosition = ZPositions.hud + 10 // On top of everything
+
+        // Create a sequence to scale, wait, fade, and then remove the label.
+        let scaleUp = SKAction.scale(to: 1.2, duration: 0.2)
+        let wait = SKAction.wait(forDuration: 1.0)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+        let remove = SKAction.removeFromParent()
+        
+        let sequence = SKAction.sequence([scaleUp, wait, fadeOut, remove])
+        messageLabel.run(sequence)
+        
+        // Add the label to the scene itself so it's not affected by world scrolling.
+        addChild(messageLabel)
     }
     
     
@@ -659,14 +710,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             
             
-            // 2. Check for menu buttons.
+            // --- Menu & Upgrade Logic ---
             let tappedNode = self.atPoint(location)
-//            
-            // Check for upgrade card taps first
-            if let cardBackground = tappedNode as? SKShapeNode, let cardName = cardBackground.name as? String {
-                upgradeMenu.selectCard(withName: cardName)
-                print("selecting: \(cardName)")
-                return // The touch has been handled
+            
+            var currentNode: SKNode? = tappedNode
+//
+//            // Check for upgrade card taps first
+//            if let cardBackground = tappedNode as? SKShapeNode, let cardName = cardBackground.name as? String {
+//                upgradeMenu.selectCard(withName: cardName)
+//                print("selecting: \(cardName)")
+//                return // The touch has been handled
+//            }
+            
+            
+            // 1. CARD SELECTION LOGIC (The "Bubble Up" Method)
+            // This loop travels up from the tapped node to find a parent card.
+            while let node = currentNode {
+                // Check if the node's name is one of our upgrade cards.
+                if let nodeName = node.name, nodeName.starts(with: "upgrade") {
+                    
+                    // We found an upgrade card! Select it and stop all further touch processing.
+                    upgradeMenu.selectCard(withName: nodeName)
+                    print("Successfully selected card: \(nodeName)")
+                    return // The touch has been handled, so we exit the function.
+                }
+                
+                // If it's not a card, move up to the parent and check again.
+                currentNode = node.parent
             }
             
             

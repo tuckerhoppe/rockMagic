@@ -84,47 +84,30 @@ class UpgradeMenuNode: SKNode {
         fatalError("init(coder:) has not been implemented")
     }
     
-    /// Called by GameScene when a card is tapped.
-//    func selectCard(withName name: String) {
-//        // Deselect all other cards
-//        for card in cardContainer.children {
-//            if let background = card.childNode(withName: "cardBackground") as? SKShapeNode {
-//                background.strokeColor = .lightGray
-//            }
-//        }
-//        
-//        // Select the new card
-//        if let card = cardContainer.childNode(withName: "//\(name)")?.parent {
-//            if let background = card.childNode(withName: "cardBackground") as? SKShapeNode {
-//                print("making her yellow!")
-//                background.strokeColor = .yellow // Highlight with yellow
-//            }
-//            selectedCardName = name
-//            confirmButton.fontColor = .cyan // Enable the confirm button
-//        }
-//    }
     
-    /// Called by GameScene when a card is tapped.
+    /// Called by GameScene when a card is tapped. This handles the visual highlighting.
     func selectCard(withName name: String) {
         // 1. Deselect all other cards.
-        for node in cardContainer.children {
-            // Find all the nodes with the generic "upgradeCard" name.
-            if node.name == "upgradeCard" {
-                // Find the first SKShapeNode inside that card (which is the background).
-                if let background = node.children.first as? SKShapeNode {
-                    background.strokeColor = .lightGray
-                }
+        // Iterate through each card SKNode in the container.
+        for card in cardContainer.children {
+            // Find the background shape node within this card.
+            if let background = card.childNode(withName: "cardBackground") as? SKShapeNode {
+                background.strokeColor = .lightGray // Reset to default color.
             }
         }
         
         // 2. Select the new card.
-        // Find the specific card whose background has the unique name that was tapped.
-        if let tappedBackground = cardContainer.childNode(withName: "//\(name)") as? SKShapeNode {
-            tappedBackground.strokeColor = .yellow // Highlight with yellow
+        // Find the specific card SKNode that was tapped by its unique name.
+        if let selectedCard = cardContainer.childNode(withName: name) {
+            // Find the background shape node within the selected card.
+            if let selectedBackground = selectedCard.childNode(withName: "cardBackground") as? SKShapeNode {
+                selectedBackground.strokeColor = .yellow // Highlight with yellow.
+            }
         }
         
+        // 3. Store the name of the selected upgrade and enable the confirm button.
         selectedCardName = name
-        confirmButton.fontColor = .cyan // Enable the confirm button
+        confirmButton.fontColor = .cyan
     }
 
     
@@ -138,13 +121,14 @@ class UpgradeMenuNode: SKNode {
     /// A helper function to create a single upgrade card UI.
     private func createUpgradeCard(size: CGSize, title: String, level: Int, name: String, imageName: String) -> SKNode {
         let card = SKNode()
-        card.name = "upgradeCard"
+        card.name = name
+        //card.name = "upgradeCard"
         
         let background = SKShapeNode(rectOf: size, cornerRadius: 10)
-       //background.name = "cardBackground" // Give the background a generic name
+        background.name = "cardBackground" // Give the background a generic name
         
         //background.userData = ["name": name] // Store the unique name in userData
-        background.name = name
+        //background.name = name
         background.fillColor = .darkGray
         background.strokeColor = .lightGray
         background.lineWidth = 2
@@ -156,6 +140,7 @@ class UpgradeMenuNode: SKNode {
         titleLabel.fontSize = 18
         titleLabel.fontColor = .white
         titleLabel.position = CGPoint(x: 0, y: size.height/2 - 25)
+        titleLabel.isUserInteractionEnabled = false // <-- ADD THIS LINE
         card.addChild(titleLabel)
         
         // --- ADD THIS BLOCK to create the image ---
@@ -164,6 +149,7 @@ class UpgradeMenuNode: SKNode {
         let imageSize: CGFloat = 40.0
         imageSprite.size = CGSize(width: imageSize, height: imageSize)
         imageSprite.position = CGPoint(x: 0, y: 10) // Position it in the middle
+        imageSprite.isUserInteractionEnabled = false // <-- ADD THIS LINE
         card.addChild(imageSprite)
         // ------------------------------------------
         
@@ -176,6 +162,7 @@ class UpgradeMenuNode: SKNode {
             
             let xPos = -50 + (25 * CGFloat(i))
             star.position = CGPoint(x: xPos, y: -size.height/2 + 25)
+            star.isUserInteractionEnabled = false
             card.addChild(star)
         }
         

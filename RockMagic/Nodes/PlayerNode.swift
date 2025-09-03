@@ -258,7 +258,7 @@ class PlayerNode: SKSpriteNode, Damageable {
         }
         
         // Hide the player node
-        self.isHidden = true
+        //self.isHidden = true
         self.physicsBody?.isDynamic = false // Stop physics interactions
     }
 }

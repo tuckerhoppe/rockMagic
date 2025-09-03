@@ -186,7 +186,7 @@ class GameManager {
     
     var launchEnemyFromBelowX: CGFloat = 45.0
     var launchEnemyFromBelowY: CGFloat = 45.0
-    var playerJumpHeight: CGFloat = 50.0
+    var playerJumpHeight: CGFloat = 55.0
 
     // --- ADD these under your Upgradable Game Variables ---
     var playerMaxStamina: Int = 100

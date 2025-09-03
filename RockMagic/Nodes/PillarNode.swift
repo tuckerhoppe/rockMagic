@@ -107,19 +107,24 @@ class PillarNode: SKNode, Damageable {
         // --- ADD THIS CALL to update the visual bar ---
         updateHealthBar()
         
-        // --- THE FIX: Save the original color first ---
-            let originalColor = rectangle.color
+        // 1. Save the original brown color.
+            //let originalColor = rectangle.color
             
-            // 1. Define the actions for the flash effect.
-            let redFlash = SKAction.colorize(with: .red, colorBlendFactor: 1.0, duration: 0.1)
+            // 2. Create an action that instantly SETS the color to red.
+            let redFlash = SKAction.run { [weak self] in
+                self?.rectangle.color = .red
+            }
             
-            // 2. Create an action that restores the original color.
-            let restoreColor = SKAction.colorize(with: originalColor, colorBlendFactor: 1.0, duration: 0.1)
+            // 3. Create an action that SETS the color back to the original brown.
+            let restoreColor = SKAction.run { [weak self] in
+                self?.rectangle.color = .brown
+            }
             
-            // 3. Create a sequence to flash red and then go back to brown.
-            let flashSequence = SKAction.sequence([redFlash, restoreColor])
+            // 4. Create a sequence to flash and then restore.
+            let delay = SKAction.wait(forDuration: 0.1)
+            let flashSequence = SKAction.sequence([redFlash, delay, restoreColor])
 
-            // 4. Run the sequence on the rectangle.
+            // 5. Run the sequence on the rectangle.
             rectangle.run(flashSequence)
         
         //print("Player health: \(currentHealth)/\(maxHealth)")

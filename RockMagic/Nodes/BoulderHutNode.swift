@@ -101,7 +101,7 @@ class BoulderHutNode: SKSpriteNode, Defendable {
         
         // Tell the GameScene to show the game over menu
         if let gameScene = self.scene as? GameScene {
-            gameScene.showGameOverMenu()
+            gameScene.showGameOverMenu(message: "Boulder Hut DEAD!")
         }
         
         // Remove the hut from the game
