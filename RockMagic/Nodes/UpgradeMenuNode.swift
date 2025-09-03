@@ -53,9 +53,9 @@ class UpgradeMenuNode: SKNode {
         cardContainer.addChild(strongAttackCard)
         
         
-        let staminaCard = createUpgradeCard(size: cardSize, title: "Placeholder", level: gm.staminaLevel, name: "upgradeStamina", imageName: "greenGem")
-        staminaCard.position = CGPoint(x: 0, y: -50)
-        cardContainer.addChild(staminaCard)
+        let pillarCard = createUpgradeCard(size: cardSize, title: "RockWalls", level: gm.pillarLevel, name: "upgradePillars", imageName: "rockMiddle")
+        pillarCard.position = CGPoint(x: 0, y: -50)
+        cardContainer.addChild(pillarCard)
         
         
         // Right column

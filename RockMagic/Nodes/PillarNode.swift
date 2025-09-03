@@ -12,7 +12,7 @@ class PillarNode: SKNode, Damageable {
     
     let startY: CGFloat = -150 // The initial Y position
     let maxHeight: CGFloat = -50
-    let maxHealth: Int = 100
+    let maxHealth: Int = GameManager.shared.pillarMaxHealth
     let riseRate: CGFloat = 0.3
     let healthRise: Int = 1
     var currentHealth: Int = 0

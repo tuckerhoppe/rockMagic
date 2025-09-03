@@ -764,7 +764,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         else if upgradeName == "upgradeQuickAttack" { upgradeType = .quickAttack }
                         else if upgradeName == "upgradeStrongAttack" { upgradeType = .strongAttack }
                         else if upgradeName == "upgradeSplashAttack" { upgradeType = .splashAttack }
-                        else if upgradeName == "upgradeStamina" { upgradeType = .stamina }
+                        else if upgradeName == "upgradePillars" { upgradeType = .pillar }
                         else if upgradeName == "upgradeBoulderSize" { upgradeType = .boulderSize }
                         if let type = upgradeType {
                             GameManager.shared.applyUpgrade(type)

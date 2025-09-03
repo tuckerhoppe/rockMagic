@@ -240,7 +240,7 @@ class HUDNode: SKNode {
         levelUpLabel.fontSize = 60
         levelUpLabel.fontColor = .yellow
         levelUpLabel.position = .zero
-        levelUpLabel.zPosition = 100
+        levelUpLabel.zPosition = ZPositions.hud + 10
         
         let scaleUp = SKAction.scale(to: 1.2, duration: 0.2)
         let wait = SKAction.wait(forDuration: 1.0)

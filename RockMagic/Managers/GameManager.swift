@@ -144,6 +144,7 @@ class GameManager {
     var strongAttackLevel = 0
     var splashAttackLevel = 0
     var boulderSizeLevel = 0
+    var pillarLevel = 0
     var staminaLevel = 0
     let maxUpgradeLevel = 5
     
@@ -151,7 +152,9 @@ class GameManager {
 
     // --- ADD this to your Static Game Variables ---
     /// The maximum number of pillars allowed in the world at one time.
-    let maxPillarCount: Int = 4
+    var maxPillarCount: Int = 2
+    var pillarMaxHealth: Int = 100
+    var pillarHealthIncreaseAmount: Int = 25
     
     
     /// The player's maximum health.
@@ -328,6 +331,12 @@ class GameManager {
                 splashAttackDamage = Int(Double(splashAttackDamage) * 1.4)
                 splashAttackRadius *= 1.2
             }
+        case .pillar:
+            if pillarLevel < maxUpgradeLevel {
+                pillarLevel += 1
+                maxPillarCount += 1
+                pillarMaxHealth += pillarHealthIncreaseAmount
+            }
         case .stamina:
             if staminaLevel < maxUpgradeLevel {
                 staminaLevel += 1
@@ -470,5 +479,5 @@ class GameManager {
 
 
 enum UpgradeType {
-    case health, quickAttack, strongAttack, splashAttack, stamina, boulderSize
+    case health, quickAttack, strongAttack, splashAttack, stamina, boulderSize, pillar
 }
