@@ -35,6 +35,8 @@ class SetupManager {
             break
         case .defense:
             setupDefenseMode()
+        case .attack:
+            setupAttackMode()
         }
     }
     
@@ -70,7 +72,7 @@ class SetupManager {
         scene.addChild(scene.midBackgroundNode)
         
         // --- Far Layer (Distant Mountains) ---
-        let farTexture = SKTexture(imageNamed: "niceGreenBackground")
+        let farTexture = SKTexture(imageNamed: "pixelNiceBackground")
         // Use many tiles to create a super-wide background that never runs out
         let numberOfFarTiles = 20
         
@@ -156,14 +158,14 @@ class SetupManager {
 
         let ground = SKNode()
         ground.position = CGPoint(x: 0, y: GameManager.shared.groundY)
-        ground.zPosition = 1
+        ground.zPosition = ZPositions.ground
         
         ground.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: worldWidth, height: groundHeight))
         ground.physicsBody?.isDynamic = false
         ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
         ground.physicsBody?.collisionBitMask = PhysicsCategory.enemy | PhysicsCategory.player
         
-        let groundTexture = SKTexture(imageNamed: "groundTextureB")
+        let groundTexture = SKTexture(imageNamed: "pixelatedGround")
         
         let desiredTileWidth: CGFloat = 100.0
         let scaleFactor = desiredTileWidth / groundTexture.size().width
@@ -251,6 +253,59 @@ class SetupManager {
         
         // 2. Tell the EnemiesManager that this is the objective.
         scene.enemiesManager.objective = boulderHut
+        
+        let worldWidth =  2250.0//scene.size.width * 3
+        
+        print("worldWidth: ", worldWidth)
+        let spawnX1 = worldWidth / 2 - 100
+        let spawnX2 = -worldWidth / 2 + 100
+        
+        let enemyBase = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0)
+        enemyBase.position = CGPoint(x: spawnX1, y: GameManager.shared.groundLevel + 40)
+        //enemyBase.size = CGSize(width: 45, height: 65)
+        scene.enemiesManager.spawnerNodes.append(enemyBase)
+        scene.worldNode.addChild(enemyBase)
+        
+        let enemyBase2 = EnemyBaseNode(normal: 0, littleRat: 80, bigBoy: 10, blocker: 0)
+        enemyBase2.position = CGPoint(x: spawnX2, y: GameManager.shared.groundLevel + 40)
+        //enemyBase.size = CGSize(width: 45, height: 65)
+        scene.enemiesManager.spawnerNodes.append(enemyBase2)
+        scene.worldNode.addChild(enemyBase2)
+    }
+    
+    private func setupAttackMode() {
+        
+        let worldWidth = 2250.0
+        let spawnX1 = -1000.0
+        let spawnX2 = -500.0
+        let spawnX3 = 0.0
+        let spawnX4 = 1000.0
+        
+        
+        
+        let enemyBase = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, rebuildMe: false)
+        enemyBase.position = CGPoint(x: spawnX1, y: GameManager.shared.groundLevel + 40)
+        //enemyBase.size = CGSize(width: 45, height: 65)
+        scene.enemiesManager.spawnerNodes.append(enemyBase)
+        scene.worldNode.addChild(enemyBase)
+        
+        let enemyBase2 = EnemyBaseNode(normal: 0, littleRat: 80, bigBoy: 0, blocker: 10, rebuildMe: false)
+        enemyBase2.position = CGPoint(x: spawnX2, y: GameManager.shared.groundLevel + 40)
+        //enemyBase.size = CGSize(width: 45, height: 65)
+        scene.enemiesManager.spawnerNodes.append(enemyBase2)
+        scene.worldNode.addChild(enemyBase2)
+        
+        let enemyBase3 = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, rebuildMe: false)
+        enemyBase3.position = CGPoint(x: spawnX3, y: GameManager.shared.groundLevel + 40)
+        //enemyBase.size = CGSize(width: 45, height: 65)
+        scene.enemiesManager.spawnerNodes.append(enemyBase3)
+        scene.worldNode.addChild(enemyBase3)
+        
+        let enemyBase4 = EnemyBaseNode(normal: 0, littleRat: 0, bigBoy: 100, blocker: 0, rebuildMe: false)
+        enemyBase4.position = CGPoint(x: spawnX4, y: GameManager.shared.groundLevel + 40)
+        //enemyBase.size = CGSize(width: 45, height: 65)
+        scene.enemiesManager.spawnerNodes.append(enemyBase2)
+        scene.worldNode.addChild(enemyBase4)
     }
     
     

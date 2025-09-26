@@ -21,11 +21,11 @@ class BoulderHutNode: SKSpriteNode, Defendable {
 
     init() {
         // Replace "Boulder_Hut_Texture" with your asset name
-        let texture = SKTexture(imageNamed: "greenGeode")
+        let texture = SKTexture(imageNamed: "rockBaby")
         super.init(texture: texture, color: .clear, size: texture.size())
         
         self.size = CGSize(width: 100, height: 100)
-        self.zPosition = ZPositions.boulderHut
+        self.zPosition = ZPositions.building
         
         setupPhysicsBody()
         setupHealthBar()

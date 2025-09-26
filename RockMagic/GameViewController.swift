@@ -16,6 +16,28 @@ class GameViewController: UIViewController, GameSceneDelegate, MainMenuSceneDele
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        
+        // --- ADD THIS DEFINITIVE TEST BLOCK ---
+            // This code attempts to manually find and load the font file.
+            
+            if let fontURL = Bundle.main.url(forResource: "VT323-Regular", withExtension: "ttf") {
+                var error: Unmanaged<CFError>?
+                if CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, &error) {
+                    print("✅ SUCCESS: Font was found and successfully registered.")
+                    // Now, run your font list printout again to confirm.
+                    for family in UIFont.familyNames.sorted() {
+                        if family.contains("Press Start") {
+                            print("✅ FOUND IT! Family: \(family), Names: \(UIFont.fontNames(forFamilyName: family))")
+                        }
+                    }
+                } else {
+                    print("❌ ERROR: Font was found, but failed to register. Error: \(error!)")
+                }
+            } else {
+                print("❌ CRITICAL ERROR: The font file 'PressStart2P-Regular.ttf' could not be found in the app bundle. This is why it's not loading.")
+            }
+        
+        
         if let view = self.view as! SKView? {
             
             let scene = MainMenuScene(size: view.bounds.size)

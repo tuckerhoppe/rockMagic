@@ -49,11 +49,11 @@ class PickupNode: SKSpriteNode {
         super.init(texture: texture, color: .clear, size: texture.size())
         
         self.zPosition = ZPositions.pickups
-        self.setScale(0.05)
+        self.setScale(0.1)
         setupPhysicsBody()
         
         if type == .coin || type == .fiveCoin {
-            self.setScale(0.02)
+            self.setScale(0.05)
             // Make the coin pickup disappear after 15 seconds
             let wait = SKAction.wait(forDuration: 15.0)
             let fadeOut = SKAction.fadeOut(withDuration: 0.5)

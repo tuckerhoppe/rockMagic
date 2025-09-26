@@ -72,7 +72,7 @@ class TutorialManager {
         tutorialNode.addChild(card)
         
         // --- ADD THIS BLOCK to create the title ---
-        titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        titleLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         titleLabel.text = "Tutorial"
         titleLabel.fontSize = 22
         titleLabel.fontColor = .green
@@ -83,7 +83,7 @@ class TutorialManager {
 
         
         // Create the text label
-        tutorialLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+        tutorialLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         tutorialLabel.text = "Welcome to RockMagic! Let's learn the basics."
         tutorialLabel.fontSize = 16
         tutorialLabel.fontColor = .white
@@ -99,7 +99,7 @@ class TutorialManager {
         tutorialNode.addChild(tutorialImage)
         
         // Create a "Skip" button (this part is the same)
-        skipButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        skipButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         skipButton.text = "Skip Tutorial"
         skipButton.fontSize = 20
         skipButton.fontColor = .cyan
@@ -111,7 +111,7 @@ class TutorialManager {
         
         // --- ADD THE NEW "NEXT" BUTTON ---
         // Create it once, but keep it hidden until a step is completed.
-        tutorialNextButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        tutorialNextButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         tutorialNextButton.text = "Next >"
         tutorialNextButton.fontSize = 22
         tutorialNextButton.fontColor = .gray
@@ -189,7 +189,7 @@ class TutorialManager {
             player.currentHealth = 50
             hud.updateHealthBar(currentHealth: CGFloat(player.currentHealth), maxHealth: CGFloat(GameManager.shared.playerMaxHealth))
             let med = PickupNode(type: .health)
-            med.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 15)
+            med.position = CGPoint(x: player.worldPosition.x + 100, y:GameManager.shared.groundLevel + 30)
             scene?.worldNode.addChild(med)
             
             tutorialLabel.text = "Restore health only when damaged."

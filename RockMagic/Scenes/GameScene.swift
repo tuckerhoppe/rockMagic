@@ -17,6 +17,7 @@ protocol GameSceneDelegate: AnyObject {
 enum gameMode {
     case survival
     case defense
+    case attack
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -77,6 +78,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var midBackgroundNode: SKNode!
     
     private var gameOverMenu: GameOverNode!
+    private var victoryMenu: VictoryNode!
     
     /// A special node that will not be affected when the scene is paused.
     /// This is used to run timers and animations for menus.
@@ -124,6 +126,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // --- ADD THIS BLOCK to create the unpausable node ---
         unpausableNode = SKNode()
         addChild(unpausableNode)
+        
+        
+        // Add this to didMove(to:) to find the exact font name
+        for family in UIFont.familyNames.sorted() {
+            let names = UIFont.fontNames(forFamilyName: family)
+            print("Family: \(family) Font names: \(names)")
+        }
         
         
         screenBoundaryLeft = 6
@@ -373,6 +382,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
+        checkWinCondition()
         //
     }
     
@@ -424,6 +434,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pillarBeingPulled?.pullingUp = false
         pillarBeingPulled = nil
         hasCreatedPillarThisTouch = false // Reset for the next touch
+        //player.playAnimation(.idle)
     }
     
 //    // --- ADD THIS ACTION METHOD ---
@@ -465,7 +476,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // --- ADD this new helper function ---
     func showFloatingText(text: String, at position: CGPoint) {
-        let label = SKLabelNode(fontNamed: "Menlo-Bold")
+        let label = SKLabelNode(fontNamed: GameManager.shared.fontName)
         label.text = text
         label.fontSize = 20
         label.fontColor = .white
@@ -540,6 +551,68 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.currentHealth = player.maxHealth // Full heal on level up
         playerTookDamage() // Update the HUD
     }
+    
+    func checkWinCondition() {
+        switch gameMode {
+        case .survival:
+            break
+        case .defense:
+            break
+        case .attack:
+            if enemiesManager.spawnerNodes.isEmpty {
+                showVictoryMenu(message: "You Win!")
+            }
+            
+            
+        }
+    }
+    
+    func showVictoryMenu(message: String = "You Won!") {
+        // 1. Immediately display the game over node. This ensures it always appears.
+        //self.displayGameOverNode()
+        
+        // 1. Immediately display the green message on the screen.
+        showTemporaryMessage(message: message, color: .green)
+        worldNode.isPaused = true
+        
+        // 1. Create the action that will display the game over node.
+       let showMenuAction = SKAction.run { [weak self] in
+           self?.displayVictoryNode()
+       }
+
+       // 2. Create a 1-second wait action.
+       let wait = SKAction.wait(forDuration: 1.0)
+
+       // 3. Create a sequence to wait, then show the menu.
+       let sequence = SKAction.sequence([wait, showMenuAction])
+
+       // 4. Run the sequence on the unpausableNode to ensure the timer
+       //    works even if other parts of the scene are paused.
+       unpausableNode.run(sequence)
+
+        
+    }
+
+    // Your helper function is still needed
+    func displayVictoryNode() {
+        //guard GameManager.shared.currentScore > 0 else { return }
+        self.isPaused = true
+        
+        victoryMenu = VictoryNode(size: self.size, score: GameManager.shared.currentScore)
+        victoryMenu.zPosition = ZPositions.hud + 20
+        addChild(victoryMenu)
+        //print("GAME OVER NODE DISPLAYED")
+        
+        // --- ADD THIS LOGIC ---
+         //Start a 1-second timer. The menu will only be interactable after it finishes.
+//        let wait = SKAction.wait(forDuration: 5.0)
+//        let makeInteractable = SKAction.run { [weak self] in
+//            self?.isGameOverInteractable = true
+//            print("Ok it should be interactable now!")
+//        }
+//        self.run(SKAction.sequence([wait, makeInteractable]))
+    }
+        
 
     func showGameOverMenu(message: String = "You Died") {
         // 1. Immediately display the game over node. This ensures it always appears.
@@ -630,7 +703,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     /// Displays a large, temporary message in the center of the screen that fades out.
     private func showTemporaryMessage(message: String, color: UIColor) {
-        let messageLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        let messageLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         messageLabel.text = message
         messageLabel.fontColor = color
         messageLabel.fontSize = 45
@@ -1282,7 +1355,7 @@ func createCoordinateGrid(in scene: SKScene, step: Int) -> SKNode {
         line.alpha = 0.5
         gridNode.addChild(line)
 
-        let label = SKLabelNode(fontNamed: "Menlo-Regular")
+        let label = SKLabelNode(fontNamed: GameManager.shared.fontName)
         label.text = "\(x)"
         label.fontSize = 12
         label.fontColor = .white
@@ -1302,7 +1375,7 @@ func createCoordinateGrid(in scene: SKScene, step: Int) -> SKNode {
         line.alpha = 0.5
         gridNode.addChild(line)
         
-        let label = SKLabelNode(fontNamed: "Menlo-Regular")
+        let label = SKLabelNode(fontNamed: GameManager.shared.fontName)
         label.text = "\(y)"
         label.fontSize = 12
         label.fontColor = .white

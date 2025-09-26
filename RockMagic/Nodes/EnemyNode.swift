@@ -39,7 +39,7 @@ class EnemyNode: SKSpriteNode {
     var tossedAction: SKAction!
     var attackAction: SKAction!
     
-    let walkFrames = (1...5).map { SKTexture(imageNamed: "badGuyR\($0)") }
+    let walkFrames = (1...5).map { SKTexture(imageNamed: "goblinWalk\($0)") }
     var moveSpeed: CGFloat = GameManager.shared.enemyMoveSpeed
     var myMoveSpeed: CGFloat = 0.0
     var stoppingDistance: CGFloat = 35 // NEW: How close to get before stopping
@@ -158,7 +158,7 @@ class EnemyNode: SKSpriteNode {
         // Replace "Shield_Icon" with your actual asset name
         shieldSprite = SKSpriteNode(imageNamed: "shield")
         // Set the shield to be exactly 50x50 points.
-        shieldSprite.size = CGSize(width: 50, height: 50)
+        shieldSprite.size = CGSize(width: 35, height: 35)
         shieldSprite.zPosition = 1 // Make sure it's in front of the enemy
         shieldSprite.isHidden = true // Start hidden
         addChild(shieldSprite)
@@ -483,8 +483,8 @@ class EnemyNode: SKSpriteNode {
                 //print("attacking!")
 //
 //                run(sequence, withKey: "animation")
-                let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
-                let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
+                let frame1 = SKAction.setTexture(SKTexture(imageNamed: "goblinIdle"), resize: true)
+                let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "goblinAttack"), resize: true)
                 let wait = SKAction.wait(forDuration: 0.5)
                 
                 let runAttack = SKAction.run { [weak self] in
@@ -511,8 +511,8 @@ class EnemyNode: SKSpriteNode {
                 
                 physicsBody.velocity = CGVector(dx: 0, dy: physicsBody.velocity.dy)
                 // This is your existing stationary attack loop.
-                let frame1 = SKAction.setTexture(SKTexture(imageNamed: "badGuyR1"), resize: true)
-                let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "badGuyAttack"), resize: true)
+                let frame1 = SKAction.setTexture(SKTexture(imageNamed: "goblinIdle"), resize: true)
+                let frameAttack = SKAction.setTexture(SKTexture(imageNamed: "goblinAttack"), resize: true)
                 let wait = SKAction.wait(forDuration: 0.25)
                 
                 let runAttack = SKAction.run { [weak self] in
@@ -547,14 +547,14 @@ class EnemyNode: SKSpriteNode {
 //                // --- Neutral Idle ---
 //                // No target was provided. This happens after a toss.
 //                // Just stand still on the first frame.
-                self.texture = SKTexture(imageNamed: "badGuyR1")
+                self.texture = SKTexture(imageNamed: "goblinIdle")
                 
            // }
             
         case .tossed:
             // Lazily creates the action the first time its needed
             if tossedAction == nil {
-                let tossedFrames = [SKTexture(imageNamed: "badGuyLaunched")]
+                let tossedFrames = [SKTexture(imageNamed: "goblinLaunched")]
                 tossedAction = SKAction.repeatForever(SKAction.animate(with: tossedFrames, timePerFrame: 0.25, resize: true, restore: false))
             }
             run(tossedAction, withKey: "animation")

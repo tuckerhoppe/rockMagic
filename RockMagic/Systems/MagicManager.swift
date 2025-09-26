@@ -136,6 +136,8 @@ class MagicManager {
             oldestPillar.destroy()
         }
         
+        player?.playAnimation(.pullPillar)
+        
         
         return pillar
         

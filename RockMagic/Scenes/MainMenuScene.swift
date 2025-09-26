@@ -37,37 +37,54 @@ class MainMenuScene: SKScene {
         backgroundColor = .darkGray
         
         // --- Main Menu Buttons ---
-        let titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        let titleLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         titleLabel.text = "RockMagic"
         titleLabel.fontSize = 60
         titleLabel.fontColor = .white
         titleLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.75)
         addChild(titleLabel)
         
-//        let startButton = SKLabelNode(fontNamed: "Menlo-Regular")
+//        let startButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
 //        startButton.text = "Start Game"
 //        startButton.fontSize = 40
 //        startButton.fontColor = .cyan
 //        startButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.5)
 //        startButton.name = "startButton"
 //        addChild(startButton)
-        let survivalButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        
+        let StoryButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        StoryButton.text = "Story"
+        StoryButton.fontSize = 40
+        StoryButton.fontColor = .cyan
+        StoryButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.55)
+        StoryButton.name = "StoryButton"
+        addChild(StoryButton)
+        
+        let survivalButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         survivalButton.text = "Survival"
         survivalButton.fontSize = 40
         survivalButton.fontColor = .cyan
-        survivalButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.55)
+        survivalButton.position = CGPoint(x: self.size.width / 2, y: StoryButton.position.y - 60)
         survivalButton.name = "survivalButton"
         addChild(survivalButton)
         
-        let defenseButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        let defenseButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         defenseButton.text = "Defense"
         defenseButton.fontSize = 40
         defenseButton.fontColor = .cyan
-        defenseButton.position = CGPoint(x: self.size.width / 2, y: survivalButton.position.y - 60)
+        defenseButton.position = CGPoint(x: (self.size.width / 3) * 2, y: StoryButton.position.y - 60)
         defenseButton.name = "defenseButton"
         addChild(defenseButton)
         
-        let instructionsButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        let attackButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        attackButton.text = "Attack"
+        attackButton.fontSize = 40
+        attackButton.fontColor = .cyan
+        attackButton.position = CGPoint(x: self.size.width / 3, y: StoryButton.position.y - 60)
+        attackButton.name = "attackButton"
+        addChild(attackButton)
+        
+        let instructionsButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         instructionsButton.text = "Instructions"
         instructionsButton.fontSize = 40
         instructionsButton.fontColor = .cyan
@@ -76,7 +93,7 @@ class MainMenuScene: SKScene {
         addChild(instructionsButton)
         
         // --- ADD THE NEW HIGH SCORES BUTTON ---
-        let highScoresButton = SKLabelNode(fontNamed: "Menlo-Regular")
+        let highScoresButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         highScoresButton.text = "High Scores"
         highScoresButton.fontSize = 40
         highScoresButton.fontColor = .cyan
@@ -152,7 +169,7 @@ class MainMenuScene: SKScene {
         Summon a boulder under yourself to jump!
         """
         
-        let instructionsLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+        let instructionsLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         instructionsLabel.text = instructionsText
         instructionsLabel.fontSize = 20
         instructionsLabel.fontColor = .white
@@ -187,7 +204,11 @@ class MainMenuScene: SKScene {
         } else if tappedNode?.name == "defenseButton" {
             // Tell the delegate to start a defense game.
             menuDelegate?.mainMenu(self, didSelectMode: .defense)
-        } else if tappedNode?.name == "instructionsButton" {
+        } else if tappedNode?.name == "attackButton" {
+            // Tell the delegate to start a defense game.
+            menuDelegate?.mainMenu(self, didSelectMode: .attack)
+            
+        }else if tappedNode?.name == "instructionsButton" {
             showInstructions()
         } else if tappedNode?.name == "backButton" {
             hideInstructions()

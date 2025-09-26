@@ -213,7 +213,7 @@ class PlayerNode: SKSpriteNode, Damageable {
         self.physicsBody?.categoryBitMask = PhysicsCategory.player
 
         // Player
-        physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge | PhysicsCategory.pillar
+        physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge | PhysicsCategory.pillar | PhysicsCategory.destroyableObject
         physicsBody?.contactTestBitMask = PhysicsCategory.enemy | PhysicsCategory.pickup | PhysicsCategory.ground 
         
     }

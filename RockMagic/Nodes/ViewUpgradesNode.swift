@@ -18,7 +18,7 @@ class ViewUpgradesNode: SKNode {
         background.position = .zero
         addChild(background)
         
-        let titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        let titleLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         titleLabel.text = "Current Upgrades"
         titleLabel.fontSize = 48
         titleLabel.fontColor = .yellow
@@ -34,7 +34,7 @@ class ViewUpgradesNode: SKNode {
         
         // Create all 6 cards just like in UpgradeMenuNode...
         // Left Column
-        let quickAttackCard = createUpgradeCard(size: cardSize, title: "Quick Attack", level: gm.quickAttackLevel,  imageName: "strike")
+        let quickAttackCard = createUpgradeCard(size: cardSize, title: "Quick Attack", level: gm.quickAttackLevel,  imageName: "QuickStrike1B")
         quickAttackCard.position = CGPoint(x: -cardSize.width - 20, y: 90)
         cardContainer.addChild(quickAttackCard)
         
@@ -44,7 +44,7 @@ class ViewUpgradesNode: SKNode {
         
         // Middle Column
         
-        let strongAttackCard = createUpgradeCard(size: cardSize, title: "Strong Attack", level: gm.strongAttackLevel,  imageName: "Player_LargeStrike")
+        let strongAttackCard = createUpgradeCard(size: cardSize, title: "Strong Attack", level: gm.strongAttackLevel,  imageName: "large strike")
         strongAttackCard.position = CGPoint(x: 0, y: 90)
         cardContainer.addChild(strongAttackCard)
         
@@ -66,7 +66,7 @@ class ViewUpgradesNode: SKNode {
         // ... etc. for all other cards
         
         // --- Add a Back Button ---
-        let backButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        let backButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         backButton.text = "Back"
         backButton.fontSize = 32
         backButton.fontColor = .cyan
@@ -89,7 +89,7 @@ class ViewUpgradesNode: SKNode {
         background.lineWidth = 2
         card.addChild(background)
         
-        let titleLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+        let titleLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         titleLabel.text = title
         titleLabel.fontSize = 18
         titleLabel.fontColor = .white
@@ -107,7 +107,7 @@ class ViewUpgradesNode: SKNode {
         
         // Create the 5 stars
         for i in 0..<5 {
-            let star = SKLabelNode(fontNamed: "Menlo-Bold")
+            let star = SKLabelNode(fontNamed: GameManager.shared.fontName)
             star.text = "★"
             star.fontSize = 24
             star.fontColor = (i < level) ? .yellow : .gray

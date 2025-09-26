@@ -11,9 +11,10 @@ import CoreGraphics // For CGFloat
 
 struct ZPositions {
     static let background: CGFloat = -100
-    static let ground: CGFloat = -50
-    static let boulder: CGFloat = 0
-    static let boulderHut: CGFloat = -1
+    static let ground: CGFloat = 0
+    static let pillar: CGFloat = -5
+    static let boulder: CGFloat = -1
+    static let building: CGFloat = 1
     static let enemy: CGFloat = 5 // Example: slightly behind player
     static let player: CGFloat = 8
     static let pickups: CGFloat = 10

@@ -22,7 +22,7 @@ class UpgradeMenuNode: SKNode {
         background.position = .zero
         addChild(background)
         
-        let titleLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        let titleLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         titleLabel.text = "Choose an Upgrade!"
         titleLabel.fontSize = 48
         titleLabel.fontColor = .yellow
@@ -38,39 +38,39 @@ class UpgradeMenuNode: SKNode {
         let cardSize = CGSize(width: 200, height: 120)
         
         // Left Column
-        let quickAttackCard = createUpgradeCard(size: cardSize, title: "Quick Attack", level: gm.quickAttackLevel, name: "upgradeQuickAttack", imageName: "strike")
+        let quickAttackCard = createUpgradeCard(size: cardSize, title: "Quick Attack", description: "Increases damage by 30%", level: gm.quickAttackLevel, name: "upgradeQuickAttack", imageName: "QuickStrike1B")
         quickAttackCard.position = CGPoint(x: -cardSize.width - 20, y: 90)
         cardContainer.addChild(quickAttackCard)
         
-        let boulderSizeCard = createUpgradeCard(size: cardSize, title: "Boulder Size", level: gm.boulderSizeLevel, name: "upgradeBoulderSize", imageName: "rockTop")
+        let boulderSizeCard = createUpgradeCard(size: cardSize, title: "Boulder Size",description: "Increases all atk damage by 15%", level: gm.boulderSizeLevel, name: "upgradeBoulderSize", imageName: "rockTop")
         boulderSizeCard.position = CGPoint(x: -cardSize.width - 20, y: -50)
         cardContainer.addChild(boulderSizeCard)
         
         // Middle Column
         
-        let strongAttackCard = createUpgradeCard(size: cardSize, title: "Strong Attack", level: gm.strongAttackLevel, name: "upgradeStrongAttack", imageName: "Player_LargeStrike")
+        let strongAttackCard = createUpgradeCard(size: cardSize, title: "Strong Attack",description: "Increases damage by 30%", level: gm.strongAttackLevel, name: "upgradeStrongAttack", imageName: "large strike")
         strongAttackCard.position = CGPoint(x: 0, y: 90)
         cardContainer.addChild(strongAttackCard)
         
         
-        let pillarCard = createUpgradeCard(size: cardSize, title: "RockWalls", level: gm.pillarLevel, name: "upgradePillars", imageName: "rockMiddle")
+        let pillarCard = createUpgradeCard(size: cardSize, title: "RockWalls", description: "Increases Rockwall amount & Health",level: gm.pillarLevel, name: "upgradePillars", imageName: "rockMiddle")
         pillarCard.position = CGPoint(x: 0, y: -50)
         cardContainer.addChild(pillarCard)
         
         
         // Right column
         
-        let splashAttackCard = createUpgradeCard(size: cardSize, title: "Splash Attack", level: gm.splashAttackLevel, name: "upgradeSplashAttack", imageName: "kick")
+        let splashAttackCard = createUpgradeCard(size: cardSize, title: "Splash Attack",description: "Increases damage and splash area", level: gm.splashAttackLevel, name: "upgradeSplashAttack", imageName: "kick")
         splashAttackCard.position = CGPoint(x: cardSize.width + 20, y: 90)
         cardContainer.addChild(splashAttackCard)
         
-        let healthCard = createUpgradeCard(size: cardSize, title: "Max Health", level: gm.healthLevel, name: "upgradeHealth", imageName: "health")
+        let healthCard = createUpgradeCard(size: cardSize, title: "Max Health", description: "Increases full health by 50",level: gm.healthLevel, name: "upgradeHealth", imageName: "health")
         healthCard.position = CGPoint(x: cardSize.width + 20, y: -50)
         cardContainer.addChild(healthCard)
         
         
         // --- Create the Confirm Button (initially hidden) ---
-        confirmButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        confirmButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         confirmButton.text = "Confirm Upgrade"
         confirmButton.fontSize = 32
         confirmButton.fontColor = .gray // Start in a disabled state
@@ -119,7 +119,7 @@ class UpgradeMenuNode: SKNode {
     // In UpgradeMenuNode.swift
 
     /// A helper function to create a single upgrade card UI.
-    private func createUpgradeCard(size: CGSize, title: String, level: Int, name: String, imageName: String) -> SKNode {
+    private func createUpgradeCard(size: CGSize, title: String, description: String, level: Int, name: String, imageName: String) -> SKNode {
         let card = SKNode()
         card.name = name
         //card.name = "upgradeCard"
@@ -135,7 +135,7 @@ class UpgradeMenuNode: SKNode {
         //background.name = name
         card.addChild(background)
         
-        let titleLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+        let titleLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         titleLabel.text = title
         titleLabel.fontSize = 18
         titleLabel.fontColor = .white
@@ -153,9 +153,17 @@ class UpgradeMenuNode: SKNode {
         card.addChild(imageSprite)
         // ------------------------------------------
         
+        let upgradeDescription = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        upgradeDescription.text = description
+        upgradeDescription.fontSize = 9
+        upgradeDescription.fontColor = .white
+        upgradeDescription.position = CGPoint(x: 0, y: -size.height/2  + 10)
+        upgradeDescription.isUserInteractionEnabled = false // <-- ADD THIS LINE
+        card.addChild(upgradeDescription)
+        
         // Create the 5 stars
         for i in 0..<5 {
-            let star = SKLabelNode(fontNamed: "Menlo-Bold")
+            let star = SKLabelNode(fontNamed: GameManager.shared.fontName)
             star.text = "★"
             star.fontSize = 24
             star.fontColor = (i < level) ? .yellow : .gray

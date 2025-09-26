@@ -58,7 +58,7 @@ class HUDNode: SKNode {
     }
     
     private func setupLevelUI(size: CGSize) {
-        levelLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        levelLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         levelLabel.text = "Level: 1"
         levelLabel.fontSize = 20
         levelLabel.fontColor = .white
@@ -148,7 +148,7 @@ class HUDNode: SKNode {
     private func setupHealthBar(size: CGSize) {
         let container = SKNode()
         
-        let label = SKLabelNode(fontNamed: "Menlo-Bold")
+        let label = SKLabelNode(fontNamed: GameManager.shared.fontName)
         label.text = "❤️"
         label.fontSize = 20
         label.fontColor = .white
@@ -190,7 +190,7 @@ class HUDNode: SKNode {
     
     // ------
     private func setupScoreLabel(size: CGSize) {
-        scoreLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        scoreLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         scoreLabel.text = "Score: 0"
         scoreLabel.fontSize = 20
         scoreLabel.fontColor = .white
@@ -235,7 +235,7 @@ class HUDNode: SKNode {
 
     // --- ADD this new function ---
     func showLevelUpMessage() {
-        let levelUpLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        let levelUpLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         levelUpLabel.text = "Level Up!"
         levelUpLabel.fontSize = 60
         levelUpLabel.fontColor = .yellow
@@ -253,7 +253,7 @@ class HUDNode: SKNode {
 
     
     private func setupPauseButton(size: CGSize) {
-        let pauseButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        let pauseButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         pauseButton.text = "||" // Standard pause icon
         pauseButton.fontSize = 30
         pauseButton.fontColor = .black

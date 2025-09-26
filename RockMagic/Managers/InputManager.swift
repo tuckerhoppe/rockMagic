@@ -370,6 +370,10 @@ class InputManager {
             } else {
                 // It was a proper hold, so stop growing
                 scene.stopGrowingPillar()
+                // Return the player to the idle animation
+                if let player = scene.player {
+                    player.playAnimation(.idleStop)
+                }
             }
 
         case .idle:

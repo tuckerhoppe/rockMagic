@@ -133,6 +133,27 @@ class CollisionManager {
             }
         }
         
+        if (firstBody.categoryBitMask == PhysicsCategory.rockPiece && secondBody.categoryBitMask == PhysicsCategory.destroyableObject) {
+                if let base = secondBody.node as? EnemyBaseNode,
+                   let rockPiece = firstBody.node as? RockPiece {
+                    
+                    // Deal damage and remove the rock piece
+                    base.takeDamage(amount: GameManager.shared.quickStrikeDamage)
+                    //rockPiece.removeFromParent()
+                }
+            }
+            
+            // --- ADD THIS NEW CASE for Boulder and EnemyBase ---
+            if (firstBody.categoryBitMask == PhysicsCategory.boulder && secondBody.categoryBitMask == PhysicsCategory.destroyableObject) {
+                if let base = secondBody.node as? EnemyBaseNode,
+                   let boulder = firstBody.node as? Boulder {
+                    
+                    // Deal damage and apply brakes to the boulder
+                    base.takeDamage(amount: GameManager.shared.fullBoulderDamage)
+                    boulder.applyBrakes()
+                }
+            }
+        
         // --- ADD THIS NEW CASE for Player and Pickup ---
         if firstBody.categoryBitMask == PhysicsCategory.player && secondBody.categoryBitMask == PhysicsCategory.pickup {
             if let player = firstBody.node as? PlayerNode,

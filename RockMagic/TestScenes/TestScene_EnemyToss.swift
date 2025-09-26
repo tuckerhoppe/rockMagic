@@ -39,28 +39,29 @@ class TestScene_EnemyToss: SKScene, SKPhysicsContactDelegate {
         addChild(enemy)
         
         // 3. Add a debug label to see the enemy's state
-        debugLabel = SKLabelNode(fontNamed: "Helvetica")
+        debugLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
         debugLabel.fontSize = 20
         debugLabel.position = CGPoint(x: frame.midX, y: frame.height - 50)
         addChild(debugLabel)
     }
 
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // 4. On tap, create and launch a single rock piece
-        let rock = RockPiece(color: .brown, size: CGSize(width: 40, height: 20))
-        rock.position = CGPoint(x: frame.midX - 200, y: 150) // Start to the left of the enemy
-        
-        rock.physicsBody = SKPhysicsBody(rectangleOf: rock.size)
-        rock.physicsBody?.categoryBitMask = PhysicsCategory.rockPiece
-        rock.physicsBody?.contactTestBitMask = PhysicsCategory.enemy // Make sure it reports contact
-        rock.physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.enemy
-        
-        // Launch it!
-        rock.isLaunched = true
-        rock.physicsBody?.applyImpulse(CGVector(dx: 50, dy: 10))
-        
-        addChild(rock)
-    }
+//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+//        // 4. On tap, create and launch a single rock piece
+//        let rock = RockPiece(color: .brown, size: CGSize(width: 40, height: 20))
+//        
+//        rock.position = CGPoint(x: frame.midX - 200, y: 150) // Start to the left of the enemy
+//        
+//        rock.physicsBody = SKPhysicsBody(rectangleOf: rock.size)
+//        rock.physicsBody?.categoryBitMask = PhysicsCategory.rockPiece
+//        rock.physicsBody?.contactTestBitMask = PhysicsCategory.enemy // Make sure it reports contact
+//        rock.physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.enemy
+//        
+//        // Launch it!
+//        rock.isLaunched = true
+//        rock.physicsBody?.applyImpulse(CGVector(dx: 50, dy: 10))
+//        
+//        addChild(rock)
+//    }
 
     override func update(_ currentTime: TimeInterval) {
         // 5. Update the debug label every frame

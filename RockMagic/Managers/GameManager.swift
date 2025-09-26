@@ -29,6 +29,7 @@ class GameManager {
     // =================================================================
     // These define the fundamental feel of the game and rarely change.
     
+    var fontName: String = "VT323-Regular"
     var currentGameMode: gameMode = .survival
     
     // In GameManager.swift
@@ -256,7 +257,7 @@ class GameManager {
         healthPickup.position = CGPoint(x: spawnX, y: 0) // Start at a default y
         
         // Position it on the ground
-        healthPickup.position.y = groundY + (healthPickup.size.height / 2)
+        healthPickup.position.y = groundY + (healthPickup.size.height)
         
         scene.worldNode.addChild(healthPickup)
     }

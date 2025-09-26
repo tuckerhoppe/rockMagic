@@ -53,20 +53,51 @@ class Boulder: SKNode {
         self.physicsBody?.collisionBitMask = PhysicsCategory.ground | PhysicsCategory.wall | PhysicsCategory.edge //| PhysicsCategory.enemy
         self.physicsBody?.contactTestBitMask = PhysicsCategory.enemy
 
-        // --- SETUP THE PIECES ---
-        var increase = 0
-        for _ in 0..<4 {
-            let piece = RockPiece(color: .brown, size: CGSize(width: GameManager.shared.boulderWidth - increase, height: GameManager.shared.boulderHeight)) // 50, 20
+//        // --- SETUP THE PIECES ---
+//        var increase = 0
+//        for _ in 0..<4 {
+//            let piece = RockPiece(color: .brown, size: CGSize(width: GameManager.shared.boulderWidth - increase, height: GameManager.shared.boulderHeight)) // 50, 20
+//            piece.parentBoulder = self
+//            piece.position = CGPoint(x: 25, y: increase)
+//            piece.zPosition = ZPositions.boulder
+//            piece.physicsBody = SKPhysicsBody(rectangleOf: piece.size)
+//            piece.physicsBody?.isDynamic = true
+//            piece.physicsBody?.affectedByGravity = false
+//            
+//            // Make pieces very light so the main body dominates
+//            piece.physicsBody?.mass = 0.1
+//
+//            piece.physicsBody?.categoryBitMask = PhysicsCategory.rockPiece
+//            piece.physicsBody?.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.edge | PhysicsCategory.ground
+//            piece.physicsBody?.contactTestBitMask = PhysicsCategory.player | PhysicsCategory.wall | PhysicsCategory.enemy | PhysicsCategory.edge
+//
+//            piece.isAttached = true
+//            addChild(piece)
+//            pieces.append(piece)
+//            increase += 10
+//        }
+        
+        
+        let pieceImageNames = ["rockPiece1", "rockPiece1", "rockPiece2", "rockPiece2"]
+
+        var currentYOffset: CGFloat = -5
+        var zOffset: CGFloat = 0
+
+        // 2. Loop through the image names to create and stack the pieces.
+        for imageName in pieceImageNames.reversed() {
+            let piece = RockPiece(imageNamed: imageName)
             piece.parentBoulder = self
-            piece.position = CGPoint(x: 25, y: increase)
-            piece.zPosition = ZPositions.boulder
+            
+            // Position the piece on top of the previous one.
+            piece.position = CGPoint(x: 25, y: currentYOffset + (piece.size.height / 2))
+            currentYOffset += 10//piece.size.height // Update the offset for the next piece
+            
+            piece.zPosition = ZPositions.boulder + zOffset
+            zOffset += 0.1
             piece.physicsBody = SKPhysicsBody(rectangleOf: piece.size)
             piece.physicsBody?.isDynamic = true
             piece.physicsBody?.affectedByGravity = false
-            
-            // Make pieces very light so the main body dominates
             piece.physicsBody?.mass = 0.1
-
             piece.physicsBody?.categoryBitMask = PhysicsCategory.rockPiece
             piece.physicsBody?.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.edge | PhysicsCategory.ground
             piece.physicsBody?.contactTestBitMask = PhysicsCategory.player | PhysicsCategory.wall | PhysicsCategory.enemy | PhysicsCategory.edge
@@ -74,7 +105,6 @@ class Boulder: SKNode {
             piece.isAttached = true
             addChild(piece)
             pieces.append(piece)
-            increase += 10
         }
         
         // If it's a golden boulder, give it a distinct look.
@@ -186,7 +216,7 @@ class Boulder: SKNode {
             shape.strokeColor = .yellow
             shape.fillColor = .yellow.withAlphaComponent(0.3)
             shape.lineWidth = 3
-            shape.zPosition = -1 // Place it behind the rock pieces
+            shape.zPosition = ZPositions.boulder - 1 // Place it behind the rock pieces
             
             // Add a pulsing animation for effect
             let scaleUp = SKAction.scale(to: 1.2, duration: 0.5)
@@ -206,6 +236,18 @@ class RockPiece: SKSpriteNode {
     var isAttached = true
     var damage: Int = 10
     weak var parentBoulder: Boulder?
+    
+    // --- ADD THIS NEW INITIALIZER ---
+    // This allows us to create a RockPiece from an image file.
+    init(imageNamed: String) {
+        let texture = SKTexture(imageNamed: imageNamed)
+        // Call the designated initializer of the parent class (SKSpriteNode)
+        super.init(texture: texture, color: .clear, size: texture.size())
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     //Strong attack
     func strongLaunch(direction: CGVector) {

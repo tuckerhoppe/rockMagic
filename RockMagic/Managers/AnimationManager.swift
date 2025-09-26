@@ -10,7 +10,7 @@ import SpriteKit
 
 // An enum to define all possible animations
 enum AnimationType {
-    case idle, walk, jump, summonBoulder, quickStrike, largeStrike, splashAttack
+    case idle, walk, jump, summonBoulder, quickStrike, largeStrike, splashAttack, pullPillar, idleStop
 }
 
 class AnimationManager {
@@ -31,11 +31,11 @@ class AnimationManager {
         // NOTE: Replace these texture names with your actual image asset names.
         
         // Idle (a single frame)
-        let idleTexture = SKTexture(imageNamed: "Player_Summon_1")
+        let idleTexture = SKTexture(imageNamed: "earthStanceB")
         animations[.idle] = SKAction.setTexture(idleTexture, resize: true)
         
         // Walk
-        let walkFrames = (1...5).map { SKTexture(imageNamed: "R\($0)") }
+        let walkFrames = (1...5).map { SKTexture(imageNamed: "walk\($0)") }
         animations[.walk] = SKAction.repeatForever(SKAction.animate(with: walkFrames, timePerFrame: 0.1, resize: true, restore: false))
         
         // Jump (a single frame)
@@ -45,25 +45,29 @@ class AnimationManager {
         animations[.jump] = SKAction.animate(with: jumpFrames, timePerFrame: 0.1, resize: true, restore: false)
         
         // Summon Boulder (a short animation)
-        let summonFrames = [SKTexture(imageNamed: "jump3"), SKTexture(imageNamed: "jump2"), SKTexture(imageNamed: "jump1"), SKTexture(imageNamed: "Player_Summon_1"), SKTexture(imageNamed: "Player_Summon_2"), ]
+        let summonFrames = [SKTexture(imageNamed: "summon"), SKTexture(imageNamed: "summon"), SKTexture(imageNamed: "summon"), SKTexture(imageNamed: "summon"), SKTexture(imageNamed: "summon"), ]
         animations[.summonBoulder] = SKAction.animate(with: summonFrames, timePerFrame: 0.04, resize: true, restore: false)
 //        let summonTexture = SKTexture(imageNamed: "Player_Summon_2")
 //        animations[.summonBoulder] = SKAction.setTexture(summonTexture, resize: true)
         
         // Quick Strike (a short animation)
-        let quickStrikeFrames = [SKTexture(imageNamed: "strike"), SKTexture(imageNamed: "strike2thin")]
+        let quickStrikeFrames = [SKTexture(imageNamed: "QuickStrike1B"), SKTexture(imageNamed: "QuickStrike2")]
         animations[.quickStrike] = SKAction.animate(with: quickStrikeFrames, timePerFrame: 0.1, resize: true, restore: false)
         
-        let strike1 = SKTexture(imageNamed: "strike")
-                let strike2 = SKTexture(imageNamed: "strike2thin")
+        let strike1 = SKTexture(imageNamed: "QuickStrike1B")
+                let strike2 = SKTexture(imageNamed: "QuickStrike2")
                 animations[.quickStrike] = SKAction.setTexture(strike1,  resize: true)
         
         // Large Strike (a single frame)
-        let largeStrikeTexture = SKTexture(imageNamed: "Player_LargeStrike")
+        let largeStrikeTexture = SKTexture(imageNamed: "large strike")
         animations[.largeStrike] = SKAction.setTexture(largeStrikeTexture,  resize: true)
         
         let splashTexture = SKTexture(imageNamed: "kick")
                 animations[.splashAttack] = SKAction.setTexture(splashTexture, resize: true)
+        
+        // pull up pillar (a short animation)
+        let pullPillarFrames = [SKTexture(imageNamed: "lift1"), SKTexture(imageNamed: "lift2"), SKTexture(imageNamed: "lift3"), SKTexture(imageNamed: "lift4"), SKTexture(imageNamed: "lift5"),SKTexture(imageNamed: "lift6"), ]
+        animations[.pullPillar] = SKAction.animate(with: pullPillarFrames, timePerFrame: 0.4, resize: true, restore: false)
     }
     
     // In AnimationManager.swift
@@ -77,6 +81,9 @@ class AnimationManager {
         let locomotionKey = "locomotion"
         let actionKey = "action"
         
+        // 1. Add a new key for our cancellable animation.
+       let cancellableActionKey = "cancellableAction"
+        
         switch animationType {
         case .idle, .walk:
             // Only play a walk/idle animation if no other action is currently running.
@@ -87,13 +94,24 @@ class AnimationManager {
                 node.run(animationAction, withKey: locomotionKey)
             }
             
+        // 1. Make '.idle' a special "reset" case.
+        case .idleStop:
+            // This is our universal "stop everything" command.
+            // It removes any action or locomotion animation that is running.
+            node.removeAllActions() // A simpler way to stop everything.
+            
+            // Then, play the idle animation.
+            if let idleAction = animations[.idle] {
+                node.run(idleAction, withKey: locomotionKey)
+            }
+            
         case .quickStrike:
             // Handle the alternating strike
             let strikeTexture: SKTexture
             if useFirstStrikeImage {
-                strikeTexture = SKTexture(imageNamed: "strike")
+                strikeTexture = SKTexture(imageNamed: "QuickStrike1B")
             } else {
-                strikeTexture = SKTexture(imageNamed: "strike2thin")
+                strikeTexture = SKTexture(imageNamed: "QuickStrike2")
             }
             useFirstStrikeImage.toggle()
             
@@ -105,7 +123,7 @@ class AnimationManager {
             node.removeAction(forKey: locomotionKey)
             node.run(sequence, withKey: actionKey)
 
-        case .jump, .summonBoulder, .largeStrike, .splashAttack:
+        case .jump, .summonBoulder, .largeStrike, .splashAttack, .pullPillar:
             // This is for all other one-shot animations
             guard let animationAction = animations[animationType] else { return }
             var finalAction = animationAction
@@ -131,11 +149,11 @@ class AnimationManager {
         let actionKey = "action"
         
         switch animationType {
-        case .idle, .walk:
+        case .idle, .walk,.pullPillar:
             // This part is correct
             node.run(animationAction, withKey: locomotionKey)
         
-        case .quickStrike:
+        case .quickStrike, .idleStop:
             guard let idleAction = animations[.idle] else { return }
                     
             // Choose the texture based on the flag

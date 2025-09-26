@@ -19,7 +19,7 @@ class HighScoreScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .darkGray
         
-        let loadingLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+        let loadingLabel = SKLabelNode(fontNamed: "GameManager.shared.fontName")
         loadingLabel.text = "Loading Scores..."
         loadingLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
         addChild(loadingLabel)
@@ -30,7 +30,7 @@ class HighScoreScene: SKScene {
             if let scores = scores, !scores.isEmpty {
                 self.displayScores(scores)
             } else {
-                let noScoresLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+                let noScoresLabel = SKLabelNode(fontNamed: "GameManager.shared.fontName")
                 noScoresLabel.text = "No scores yet!"
                 noScoresLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
                 self.addChild(noScoresLabel)
@@ -41,7 +41,7 @@ class HighScoreScene: SKScene {
     }
     
     private func displayScores(_ scores: [HighScore]) {
-        let title = SKLabelNode(fontNamed: "Menlo-Bold")
+        let title = SKLabelNode(fontNamed: GameManager.shared.fontName)
         title.text = "High Scores"
         title.fontSize = 48
         title.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.85)
@@ -50,13 +50,13 @@ class HighScoreScene: SKScene {
         for (index, score) in scores.prefix(5).enumerated() { // Show top 10
             let yPos = self.size.height * 0.7 - CGFloat(index * 50)
             
-            let nameLabel = SKLabelNode(fontNamed: "Menlo-Regular")
+            let nameLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
             nameLabel.text = "\(index + 1). \(score.playerName)"
             nameLabel.horizontalAlignmentMode = .left
             nameLabel.position = CGPoint(x: self.size.width * 0.2, y: yPos)
             addChild(nameLabel)
             
-            let scoreLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+            let scoreLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
             scoreLabel.text = "\(score.score)"
             scoreLabel.horizontalAlignmentMode = .right
             scoreLabel.position = CGPoint(x: self.size.width * 0.8, y: yPos)
@@ -65,7 +65,7 @@ class HighScoreScene: SKScene {
     }
     
     private func addBackButton() {
-        let backButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        let backButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         backButton.text = "Back to Menu"
         backButton.name = "backButton"
         backButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.1)

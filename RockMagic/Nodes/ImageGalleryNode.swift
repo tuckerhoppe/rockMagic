@@ -57,7 +57,7 @@ class ImageGalleryNode: SKNode {
         let buttonYPosition = -size.height / 2 + 50
         
         // 3. Create the navigation buttons (this part is the same)
-        prevButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        prevButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         prevButton.text = "< Prev"
         prevButton.fontSize = 24
         prevButton.fontColor = .cyan
@@ -66,7 +66,7 @@ class ImageGalleryNode: SKNode {
         prevButton.zPosition = 5 // Draw the button in front of the image
         addChild(prevButton)
         
-        nextButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        nextButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
         nextButton.text = "Next >"
         nextButton.fontSize = 24
         nextButton.fontColor = .cyan

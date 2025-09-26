@@ -31,10 +31,23 @@ class PillarNode: SKNode, Damageable {
         
         
         //sets up actual shape
-        let size: CGSize = CGSize(width: 40, height: 100)
-        rectangle = SKSpriteNode(color: .brown, size: size )
-        self.position.y = -150
+//        let size: CGSize = CGSize(width: 40, height: 100)
+//        rectangle = SKSpriteNode(color: .brown, size: size )
+//        self.position.y = -150
+//        
+//        addChild(rectangle)
         
+        // --- THE FIX: Create the pillar from a sprite image ---
+        // 1. Replace "Pillar_Texture" with the name of your new asset.
+        let texture = SKTexture(imageNamed: "pillar")
+        self.rectangle = SKSpriteNode(texture: texture)
+        
+        // The size is now determined by the image itself.
+        let size = texture.size()
+        // ----------------------------------------------------
+
+        self.position.y = -150
+        self.zPosition = ZPositions.pillar
         addChild(rectangle)
         
         
@@ -92,7 +105,7 @@ class PillarNode: SKNode, Damageable {
         // This is a simple cleanup to prevent orphaned nodes.
         if !pullingUp {
             // If the pillar has somehow moved below the ground after being placed, destroy it.
-            if self.position.y < GameManager.shared.groundY {
+            if self.position.y < GameManager.shared.groundY + 10 {
                 destroy(discrete: true)
             }
         }
