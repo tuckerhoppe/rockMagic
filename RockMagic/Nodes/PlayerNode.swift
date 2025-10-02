@@ -65,34 +65,7 @@ class PlayerNode: SKSpriteNode, Damageable {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // --- ADD this new function ---
-    /// Attempts to use stamina. Returns true if successful, false otherwise.
-    func useStamina(cost: Int) -> Bool {
-        if currentStamina >= CGFloat(cost) {
-            currentStamina -= CGFloat(cost)
-            // Tell the scene to update the HUD
-            (scene as? GameScene)?.playerUsedStamina()
-            return true
-        }
-        // Not enough stamina
-        return false
-    }
-    
-    // In PlayerNode.swift
 
-    /// Drains stamina over time while holding a boulder. Returns false if stamina runs out.
-    func drainStamina(deltaTime: TimeInterval) -> Bool {
-        currentStamina -= GameManager.shared.boulderHoldStaminaDrainRate * CGFloat(deltaTime)
-        (scene as? GameScene)?.playerUsedStamina() // Update the HUD
-
-        if currentStamina <= 0 {
-            currentStamina = 0
-            (scene as? GameScene)?.playerUsedStamina() // Final HUD update
-            print("Stamina depleted!")
-            return false // Out of stamina
-        }
-        return true // Still has stamina
-    }
     
     // In PlayerNode.swift
 
@@ -192,9 +165,6 @@ class PlayerNode: SKSpriteNode, Damageable {
         self.run(sequence, withKey: "action")
     }
     
-    
-    // --- REMOVE THE OLD LAUNCH FUNCTION ---
-    // func launch(with impulse: CGVector) { ... }
     
     func launch(with impulse: CGVector) {
         self.playAnimation(.jump) // Play the jump animation

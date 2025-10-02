@@ -91,6 +91,9 @@ class CollisionManager {
             }
         }
         
+
+        
+        
         // ---  Player and Enemy Contact ---
         if firstBody.categoryBitMask == PhysicsCategory.player && secondBody.categoryBitMask == PhysicsCategory.enemy {
             if let player = firstBody.node as? PlayerNode,
@@ -112,6 +115,7 @@ class CollisionManager {
             }
         }
         
+        
         // Case 1: Enemy hits a RockPiece
         if firstBody.categoryBitMask == PhysicsCategory.enemy && secondBody.categoryBitMask == PhysicsCategory.rockPiece {
             if let enemy = firstBody.node as? EnemyNode, let rockPiece = secondBody.node as? RockPiece {
@@ -129,6 +133,25 @@ class CollisionManager {
                     // For a normal collision, we do NOT bypass the velocity check.
                     enemy.getTossed(by: representativePiece, bypassVelocityCheck: false)
                 }
+                boulder.applyBrakes()
+            }
+        }
+        
+        // --- RockPiece and DestroyableObject ---
+        if (firstBody.categoryBitMask == PhysicsCategory.rockPiece && secondBody.categoryBitMask == PhysicsCategory.destroyableObject) {
+            if let destroyable = secondBody.node as? Damageable, let rockPiece = firstBody.node as? RockPiece{
+                destroyable.takeDamage(amount: GameManager.shared.quickStrikeDamage)
+                if rockPiece.isAttached == false{
+                    rockPiece.removeFromParent()
+                }
+                //rockPiece.removeFromParent()
+            }
+        }
+
+        // --- ADD a new case for Boulder and DestroyableObject ---
+        if (firstBody.categoryBitMask == PhysicsCategory.boulder && secondBody.categoryBitMask == PhysicsCategory.destroyableObject) {
+            if let destroyable = secondBody.node as? Damageable, let boulder = firstBody.node as? Boulder {
+                destroyable.takeDamage(amount: GameManager.shared.fullBoulderDamage)
                 boulder.applyBrakes()
             }
         }

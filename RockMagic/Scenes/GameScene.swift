@@ -41,9 +41,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var flickState: JoystickFlickState = .neutral
     private var flickPrimeTime: TimeInterval = 0
     
+    let levelData: LevelData
+    // --- ADD THIS NEW INITIALIZER ---
+    init(levelData: LevelData, size: CGSize) {
+        self.levelData = levelData
+        super.init(size: size)
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     weak var gameDelegate: GameSceneDelegate?
     
-    var gameMode: gameMode = GameManager.shared.currentGameMode
+    var gameMode: gameMode! //= GameManager.shared.currentGameMode
     
     // --- Add this new property ---
     private var gameplayTouch: UITouch?
@@ -123,6 +134,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func didMove(to view: SKView) {
         
+        // ADD THIS LINE!
+        self.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        
         // --- ADD THIS BLOCK to create the unpausable node ---
         unpausableNode = SKNode()
         addChild(unpausableNode)
@@ -149,18 +163,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         EffectManager.shared.scene = self
         
+        //--- SURVIVAL MODE ---
+        // Might want a different sized world
+        // 1. Define the size of your game world. Let's make it 3 screens wide.
+        let worldWidth = self.size.width * 3
+        let worldHeight = self.size.height
+        let worldSize = CGSize(width: worldWidth, height: worldHeight)
+        
         // --- 3. INITIALIZE THE WORLD NODE ---
         worldNode = SKNode()
         addChild(worldNode)
-        //let worldGrid = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
-        //worldNode.addChild(worldGrid)
+        let worldGrid = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
+        worldNode.addChild(worldGrid)
         
         let grid = createCoordinateGrid(in: self, step: 50)
         //addChild(grid)
         
         setupManager = SetupManager(scene: self)
         // Probably a generic setupall function and the setups for the other game modes
-        setupManager.setupAll(view: view, gameMode: gameMode)
+        setupManager.setupLevel(levelData: self.levelData, view: view)
+        //setupManager.setupAll(view: view, gameMode: .survival)
         
         // Create the Pause Menu
         pauseMenu = PauseMenuNode(size: self.size)
@@ -173,6 +195,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hud = HUDNode(sceneSize: view.bounds.size)
         hud.zPosition = ZPositions.hud
         addChild(hud) // Add to scene, NOT worldNode
+        hud.showMessage(levelData.levelMessage)
         
         tutorialManager = TutorialManager(scene: self)
         // This tutorial is just
@@ -181,12 +204,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         
         
-        //--- SURVIVAL MODE ---
-        // Might want a different sized world
-        // 1. Define the size of your game world. Let's make it 3 screens wide.
-        let worldWidth = self.size.width * 3
-        let worldHeight = self.size.height
-        let worldSize = CGSize(width: worldWidth, height: worldHeight)
+        
         
         
         //testWorldNode = createWorldCoordinateGrid(worldSize: worldSize, step: 50)
@@ -243,15 +261,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Update the shared GameManager instance
         GameManager.shared.update(deltaTime: deltaTime)
-        
-        // --- Maybe remove all together?---
-        if let _ = draggedBoulder {
-            let hasStamina = player.drainStamina(deltaTime: deltaTime)
-            if !hasStamina {
-                // If the player runs out of stamina, force them to drop the boulder.
-                forceDropBoulder()
-            }
-        }
+        // Tell the HUD to update its timer display.
+        hud.updateTimer(time: GameManager.shared.gameTime)
+
         
         let joystickVelocity = joystick.velocity
         
@@ -554,16 +566,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func checkWinCondition() {
         switch gameMode {
-        case .survival:
-            break
-        case .defense:
-            break
+        case .survival, .defense:
+            if GameManager.shared.gameTime >= levelData.timeLimit {
+                showVictoryMenu(message: "You Win!")
+            }
         case .attack:
             if enemiesManager.spawnerNodes.isEmpty {
                 showVictoryMenu(message: "You Win!")
             }
             
-            
+        case .none:
+            break
         }
     }
     
@@ -856,7 +869,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 case "backButton": pauseMenu.hideInstructions()
                 case "viewUpgradesButton": pauseMenu.showUpgrades()
                 case "backToPauseMenuButton": pauseMenu.hideUpgrades()
-                case "goldenBoulderButton": magicManager.pullUpGoldenBoulderAtPlayer()
+                //case "goldenBoulderButton": magicManager.pullUpGoldenBoulderAtPlayer()
                 case "tutorialNextButton":
                     // Only advance if the button is active (cyan).
                     if tutorialManager.tutorialNextButton.fontColor == .cyan {
@@ -1097,18 +1110,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //        view?.presentScene(newGameScene, transition: transition)
 //        GameManager.shared.reset()
         
-        if let newGameScene = GameScene(fileNamed: "GameScene") {
+        //if let newGameScene = GameScene(fileNamed: "GameScene") {
+        guard let view = self.view as? SKView else { return }
+        let newGameScene = GameScene(levelData: levelData, size: view.bounds.size)
             newGameScene.scaleMode = .aspectFill
             newGameScene.gameDelegate = self.gameDelegate
 
             let transition = SKTransition.fade(withDuration: 1.0)
-            view?.presentScene(newGameScene, transition: transition)
+            view.presentScene(newGameScene, transition: transition)
 
             GameManager.shared.reset()
             
             // 👇 tell the delegate we restarted
             gameDelegate?.gameSceneDidRestart(newGameScene)
-        }
+        //}
         self.isPaused = false
 
     }

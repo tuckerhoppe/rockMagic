@@ -31,7 +31,7 @@ class EnemyBaseNode: SKSpriteNode, Damageable {
     var blocker: Int
     
 
-    init(normal: Int, littleRat: Int, bigBoy: Int, blocker: Int, rebuildMe: Bool = true) {
+    init(normal: Int, littleRat: Int, bigBoy: Int, blocker: Int, rebuildMe: Bool = true, position: CGPoint) {
         // Replace "Boulder_Hut_Texture" with your asset name
         let texture = SKTexture(imageNamed: "woodenTower")
         
@@ -44,8 +44,12 @@ class EnemyBaseNode: SKSpriteNode, Damageable {
 
         super.init(texture: texture, color: .clear, size: texture.size())
         
+        self.isInvulnerable = false
+        
         self.size = CGSize(width: 80, height: 80)
         self.zPosition = ZPositions.building
+        
+        self.position = position
         
                 
         

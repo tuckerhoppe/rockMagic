@@ -17,18 +17,18 @@ class SetupManager {
     
     func setupAll(view: SKView, gameMode: gameMode) {
         //setupBackground()
-        setupParallaxBackgrounds()
+        setupParallaxBackgrounds(with: "pixelNiceBackground")
         setupPhysics()
         setupCollissions()
         setupPlayer()
-        setupGround()
+        setupGround(with: "pixelatedground")
         setupJoystick()
         
         setupEnemies()
         setupInput(view: view)
         setupMagic()
         
-        setupWorldBoundaries()
+        //setupWorldBoundaries()
         
         switch gameMode {
         case .survival:
@@ -38,6 +38,38 @@ class SetupManager {
         case .attack:
             setupAttackMode()
         }
+    }
+    
+    // ADD THIS NEW "main" setup function
+    func setupLevel(levelData: LevelData, view: SKView) {
+        // --- Universal Setup (same for all levels) ---
+        setupPhysics()
+        setupCollissions()
+        setupPlayer()
+        setupJoystick()
+        setupInput(view: view)
+        setupWorldBoundaries(for: levelData.levelWidth)
+        
+        scene.gameMode = levelData.gameMode
+        
+        // --- Level-Specific Setup (driven by LevelData) ---
+        setupParallaxBackgrounds(with: levelData.artAssets.background)
+        setupGround(with: levelData.artAssets.ground)
+        setupEnvironmentObjects(with: levelData.environmentObjects)
+        
+        // The setupMagic() call depends on EnemiesManager, so call it last.
+        setupEnemies()
+        setupMagic()
+        
+        setupBases(baseConfigs: levelData.enemyBases)
+        //setupDefenseMode()
+        if levelData.defendingObjective != nil {
+            setupDefendable(boulderBaby: levelData.defendingObjective!)
+            
+        }
+                
+        
+        
     }
     
     private func setupPhysics() {
@@ -63,7 +95,7 @@ class SetupManager {
     }
     
 
-    private func setupParallaxBackgrounds() {
+    private func setupParallaxBackgrounds(with asset: String) {
         // Initialize the nodes
         scene.farBackgroundNode = SKNode()
         scene.midBackgroundNode = SKNode()
@@ -72,7 +104,7 @@ class SetupManager {
         scene.addChild(scene.midBackgroundNode)
         
         // --- Far Layer (Distant Mountains) ---
-        let farTexture = SKTexture(imageNamed: "pixelNiceBackground")
+        let farTexture = SKTexture(imageNamed: asset)
         // Use many tiles to create a super-wide background that never runs out
         let numberOfFarTiles = 20
         
@@ -81,7 +113,7 @@ class SetupManager {
             
             // --- THE FIX for SIZE ---
             // Make the image much smaller (e.g., 30% of screen height)
-            let scaleFactor = (scene.size.height / tile.size.height) * 0.2
+            let scaleFactor = (scene.size.height / tile.size.height) * 0.8
             tile.setScale(scaleFactor)
             
             // Lay the tiles side-by-side
@@ -131,28 +163,7 @@ class SetupManager {
         scene.worldNode.addChild(background)
     }
     
-    // EVENTUALLY GO IN A SETUP ENVIORMNT Manager?
-    private func setupGroundOG() {
-        // Define your new lighter brown color
-        let lightBrown = UIColor(red: 0.82, green: 0.71, blue: 0.55, alpha: 1.0) // This is a "Tan" color
-
-        let groundHeight: CGFloat = GameManager.shared.groundHeight
-        let ground = SKSpriteNode(color: lightBrown, size: CGSize(width: scene.frame.width * 3, height: groundHeight))
-        //ground.anchorPoint = CGPoint(x: 0.5, y: 1.0) // Sets the anchor to the top-center
-        ground.position = CGPoint(x: scene.frame.midX, y: GameManager.shared.groundY)
-        ground.zPosition = 1
-        ground.name = "ground"
-        
-        ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
-        ground.physicsBody?.isDynamic = false
-        ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
-        ground.physicsBody?.contactTestBitMask = PhysicsCategory.enemy
-        ground.physicsBody?.collisionBitMask = PhysicsCategory.enemy | PhysicsCategory.player
-        
-        scene.worldNode.addChild(ground)
-    }
-    
-    private func setupGround() {
+    private func setupGround(with asset: String) {
         let groundHeight: CGFloat = GameManager.shared.groundHeight
         let worldWidth = scene.size.width * 3
 
@@ -165,9 +176,9 @@ class SetupManager {
         ground.physicsBody?.categoryBitMask = PhysicsCategory.ground
         ground.physicsBody?.collisionBitMask = PhysicsCategory.enemy | PhysicsCategory.player
         
-        let groundTexture = SKTexture(imageNamed: "pixelatedGround")
+        let groundTexture = SKTexture(imageNamed: asset)
         
-        let desiredTileWidth: CGFloat = 100.0
+        let desiredTileWidth: CGFloat = 130.0
         let scaleFactor = desiredTileWidth / groundTexture.size().width
         
         let actualTileWidth = groundTexture.size().width * scaleFactor
@@ -182,7 +193,7 @@ class SetupManager {
             // Using 0.95 will make each tile overlap the last one by 5%.
             let overlapFactor: CGFloat = 1.0
             let xPos = (actualTileWidth * overlapFactor) * CGFloat(i) - (worldWidth / 2)
-            tile.position = CGPoint(x: xPos, y: -groundHeight / 2)
+            tile.position = CGPoint(x: xPos, y: (-groundHeight / 2) - 30)
             
             ground.addChild(tile)
         }
@@ -191,10 +202,10 @@ class SetupManager {
     }
     
     // --- ADD THIS ENTIRE NEW FUNCTION ---
-    private func setupWorldBoundaries() {
+    private func setupWorldBoundaries(for width: CGFloat) {
         // We'll use the world size defined in GameScene to place the pillars.
         // Let's assume the world is 3 screens wide for this example.
-        let worldWidth = scene.size.width * 3
+        let worldWidth = width //scene.size.width * 3
         print("SetupM World width: ", worldWidth)
         let pillarSize = CGSize(width: 50, height: scene.size.height * 2)
         
@@ -244,11 +255,38 @@ class SetupManager {
     }
     
     // In SetupManager.swift
+    
+    private func setupBases(baseConfigs: [EnemyBaseConfiguration]) {
+        
+        for baseConfig in baseConfigs {
+            let enemyBase = EnemyBaseNode(
+                normal: baseConfig.spawnRatios[.normal] ?? 0,
+                littleRat: baseConfig.spawnRatios[.littleRat] ?? 0,
+                bigBoy: baseConfig.spawnRatios[.bigBoy] ?? 0,
+                blocker: baseConfig.spawnRatios[.blocker] ?? 0,
+                rebuildMe: baseConfig.canRebuild,
+                position: baseConfig.position
+            )
+            scene.enemiesManager.spawnerNodes.append(enemyBase)
+            scene.worldNode.addChild(enemyBase)
+        }
+        
+    }
+    
+    private func setupDefendable(boulderBaby: DefendableConfiguration) {
+        let boulderHut = BoulderHutNode(imageName: boulderBaby.imageName, position: boulderBaby.position, maxHealth: boulderBaby.maxHealth)
+        //boulderHut.position = CGPoint(x: 0, y: GameManager.shared.groundLevel + 40)
+        scene.worldNode.addChild(boulderHut)
+        
+        scene.enemiesManager.objective = boulderHut
+    }
+    
+    
 
     private func setupDefenseMode() {
         // 1. Create the object to defend.
-        let boulderHut = BoulderHutNode()
-        boulderHut.position = CGPoint(x: 0, y: GameManager.shared.groundLevel + 40)
+        let boulderHut = BoulderHutNode(imageName: "rockBaby", position: CGPoint(x: 0, y: GameManager.shared.groundLevel + 40), maxHealth: 300)
+        //boulderHut.position = CGPoint(x: 0, y: GameManager.shared.groundLevel + 40)
         scene.worldNode.addChild(boulderHut)
         
         // 2. Tell the EnemiesManager that this is the objective.
@@ -260,14 +298,13 @@ class SetupManager {
         let spawnX1 = worldWidth / 2 - 100
         let spawnX2 = -worldWidth / 2 + 100
         
-        let enemyBase = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0)
-        enemyBase.position = CGPoint(x: spawnX1, y: GameManager.shared.groundLevel + 40)
+        let enemyBase = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, position: CGPoint(x: spawnX1, y: GameManager.shared.groundLevel + 40))
         //enemyBase.size = CGSize(width: 45, height: 65)
         scene.enemiesManager.spawnerNodes.append(enemyBase)
         scene.worldNode.addChild(enemyBase)
         
-        let enemyBase2 = EnemyBaseNode(normal: 0, littleRat: 80, bigBoy: 10, blocker: 0)
-        enemyBase2.position = CGPoint(x: spawnX2, y: GameManager.shared.groundLevel + 40)
+        let enemyBase2 = EnemyBaseNode(normal: 0, littleRat: 80, bigBoy: 10, blocker: 0, position: CGPoint(x: 425, y: GameManager.shared.groundLevel + 40))
+        
         //enemyBase.size = CGSize(width: 45, height: 65)
         scene.enemiesManager.spawnerNodes.append(enemyBase2)
         scene.worldNode.addChild(enemyBase2)
@@ -283,30 +320,38 @@ class SetupManager {
         
         
         
-        let enemyBase = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, rebuildMe: false)
-        enemyBase.position = CGPoint(x: spawnX1, y: GameManager.shared.groundLevel + 40)
+        let enemyBase = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, rebuildMe: false, position: CGPoint(x: spawnX1, y: GameManager.shared.groundLevel + 40))
         //enemyBase.size = CGSize(width: 45, height: 65)
         scene.enemiesManager.spawnerNodes.append(enemyBase)
         scene.worldNode.addChild(enemyBase)
         
-        let enemyBase2 = EnemyBaseNode(normal: 0, littleRat: 80, bigBoy: 0, blocker: 10, rebuildMe: false)
-        enemyBase2.position = CGPoint(x: spawnX2, y: GameManager.shared.groundLevel + 40)
+        let enemyBase2 = EnemyBaseNode(normal: 0, littleRat: 80, bigBoy: 0, blocker: 10, rebuildMe: false, position: CGPoint(x: spawnX2, y: GameManager.shared.groundLevel + 40))
         //enemyBase.size = CGSize(width: 45, height: 65)
         scene.enemiesManager.spawnerNodes.append(enemyBase2)
         scene.worldNode.addChild(enemyBase2)
         
-        let enemyBase3 = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, rebuildMe: false)
-        enemyBase3.position = CGPoint(x: spawnX3, y: GameManager.shared.groundLevel + 40)
+        let enemyBase3 = EnemyBaseNode(normal: 100, littleRat: 0, bigBoy: 0, blocker: 0, rebuildMe: false, position: CGPoint(x: spawnX3, y: GameManager.shared.groundLevel + 40))
         //enemyBase.size = CGSize(width: 45, height: 65)
         scene.enemiesManager.spawnerNodes.append(enemyBase3)
         scene.worldNode.addChild(enemyBase3)
         
-        let enemyBase4 = EnemyBaseNode(normal: 0, littleRat: 0, bigBoy: 100, blocker: 0, rebuildMe: false)
-        enemyBase4.position = CGPoint(x: spawnX4, y: GameManager.shared.groundLevel + 40)
+        let enemyBase4 = EnemyBaseNode(normal: 0, littleRat: 0, bigBoy: 100, blocker: 0, rebuildMe: false, position: CGPoint(x: spawnX4, y: GameManager.shared.groundLevel + 40))
         //enemyBase.size = CGSize(width: 45, height: 65)
         scene.enemiesManager.spawnerNodes.append(enemyBase2)
         scene.worldNode.addChild(enemyBase4)
     }
+    
+    // --- ADD THIS NEW FUNCTION ---
+    private func setupEnvironmentObjects(with environmentObjects: [EnvironmentObjectConfiguration]) {
+        // Loop through all the object blueprints for this level.
+        for config in environmentObjects {
+            // Create a new node from the blueprint.
+            let objectNode = EnvironmentObjectNode(config: config)
+            // Add it to the world.
+            scene.worldNode.addChild(objectNode)
+        }
+    }
+    
     
     
     func setupInput(view: SKView) {

@@ -205,6 +205,9 @@ class EnemiesManager {
                 //print("spawned enemy with objective: boulderHut")
             }
         }
+        
+        
+        
     }
     
     func beginSpawning(every interval: TimeInterval = 2.0, gameMode: gameMode) {

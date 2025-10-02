@@ -252,23 +252,7 @@ class EnemyNode: SKSpriteNode {
     }
 
     
-    // --- ADD THIS NEW ATTACK FUNCTION ---
-//    private func attackOLD(target: PlayerNode) {
-//        // First, check if the player is still in range to be hit.
-//        let attackRange: CGFloat = 75.0 // The enemy's reach
-//        let distance = abs(self.position.x - target.worldPosition.x)
-//        
-//        if distance <= attackRange {
-//            print("Enemy attacks player!")
-//            target.takeDamage(amount: self.damage)
-//            
-//            // Tell the scene to update the health bar
-//            if let gameScene = self.scene as? GameScene {
-//                gameScene.playerTookDamage()
-//            }
-//        }
-//        
-//    }
+
     
     // --- UPDATE THE ATTACK FUNCTION ---
     private func attack(target: Damageable) {

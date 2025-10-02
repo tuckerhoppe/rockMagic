@@ -145,20 +145,42 @@ class GameViewController: UIViewController, GameSceneDelegate, MainMenuSceneDele
     // In GameViewController.swift
 
     // --- REPLACE mainMenuDidTapStart with this new function ---
-    func mainMenu(_ scene: MainMenuScene, didSelectMode mode: gameMode) {
+    func mainMenuOLD(_ scene: MainMenuScene, didSelectMode mode: gameMode) {
         // 1. Set the game mode in the GameManager.
         GameManager.shared.currentGameMode = mode
         
         // 2. The rest of the logic is the same as before.
         guard let view = self.view as? SKView else { return }
         
-        if let gameScene = GameScene(fileNamed: "GameScene") {
+//        if let gameScene = GameScene(fileNamed: "GameScene") {
+//            gameScene.gameDelegate = self
+//            isShowingHighScoreAlert = false
+//            gameScene.scaleMode = .aspectFill
+//            let transition = SKTransition.fade(withDuration: 1.0)
+//            view.presentScene(gameScene, transition: transition)
+//        }
+    }
+    
+    func mainMenu(_ scene: MainMenuScene, didSelectLevelID id: Int) {
+        // 1. Find the correct level blueprint in our database.
+        guard let levelData = LevelDatabase.world1_GrassyPlains.first(where: { $0.levelID == id }) else {
+            print("Error: Could not find level data for ID \(id)")
+            return
+        }
+        
+        // 2. Create the GameScene, passing in the level data.
+        guard let view = self.view as? SKView else { return }
+        let gameScene = GameScene(levelData: levelData, size: view.bounds.size)
+        
+        // 3. The rest of the setup is the same.
+        //if let gameScene = GameScene(coder: "GameScene") {
             gameScene.gameDelegate = self
             isShowingHighScoreAlert = false
             gameScene.scaleMode = .aspectFill
             let transition = SKTransition.fade(withDuration: 1.0)
             view.presentScene(gameScene, transition: transition)
-        }
+       //}
+
     }
     
     // --- ADD THIS NEW FUNCTION ---

@@ -11,7 +11,7 @@ class BoulderHutNode: SKSpriteNode, Defendable {
     
     // --- Damageable Protocol Requirements ---
     var currentHealth: Int = 300
-    let maxHealth: Int = 300
+    var maxHealth: Int
     
     // --- ADD these new properties for the health bar ---
     private var healthBarBackground: SKShapeNode!
@@ -19,13 +19,17 @@ class BoulderHutNode: SKSpriteNode, Defendable {
     private let healthBarWidth: CGFloat = 150
     private let healthBarHeight: CGFloat = 15
 
-    init() {
+    init(imageName: String, position: CGPoint, maxHealth: Int = 300) {
         // Replace "Boulder_Hut_Texture" with your asset name
-        let texture = SKTexture(imageNamed: "rockBaby")
+        let texture = SKTexture(imageNamed: imageName)
+        self.maxHealth = maxHealth
+        
         super.init(texture: texture, color: .clear, size: texture.size())
         
         self.size = CGSize(width: 100, height: 100)
         self.zPosition = ZPositions.building
+        self.position = position
+        
         
         setupPhysicsBody()
         setupHealthBar()

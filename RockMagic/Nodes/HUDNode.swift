@@ -14,7 +14,7 @@ class HUDNode: SKNode {
     private var staminaBar: SKShapeNode!
     private let staminaBarWidth: CGFloat = 150
     private let staminaBarHeight: CGFloat = 15
-
+    
     // --- Properties ---
     private var healthBarBackground: SKShapeNode!
     private var healthBar: SKShapeNode!
@@ -27,20 +27,25 @@ class HUDNode: SKNode {
     // --- ADD these new properties ---
     private var levelLabel: SKLabelNode!
     private var levelProgressBar: SKShapeNode!
+    
+    private var timerLabel: SKLabelNode!
+    
     private let levelBarWidth: CGFloat = 150
     
     private var topHudY: CGFloat = 0
+    private let hudPadding: CGFloat = 20
     
     // --- Initializer ---
     init(sceneSize: CGSize) {
         super.init()
-        topHudY = sceneSize.height / 2.7
+        topHudY = sceneSize.height / 2 - hudPadding
         setupHealthBar(size: sceneSize)
         setupScoreLabel(size: sceneSize)
         setupPauseButton(size: sceneSize)
         setupStaminaBar(size: sceneSize)
         setupGoldenBoulderButton(size: sceneSize)
         setupLevelUI(size: sceneSize)
+        setupTimerLabel(size: sceneSize)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -64,12 +69,12 @@ class HUDNode: SKNode {
         levelLabel.fontColor = .white
         levelLabel.position = CGPoint(x: 0, y: topHudY)
         addChild(levelLabel)
-
+        
         let progressBarBG = SKShapeNode(rectOf: CGSize(width: levelBarWidth, height: 15), cornerRadius: 4)
         progressBarBG.fillColor = .darkGray
         progressBarBG.position = CGPoint(x: 0, y: levelLabel.position.y - 10)
         addChild(progressBarBG)
-
+        
         // Create the initial progress bar, but we will redraw it later.
         levelProgressBar = SKShapeNode()
         levelProgressBar.fillColor = .cyan
@@ -89,7 +94,7 @@ class HUDNode: SKNode {
         staminaBarBackground.lineWidth = 2
         staminaBarBackground.position = .zero
         //container.addChild(staminaBarBackground)
-
+        
         staminaBar = SKShapeNode(rectOf: CGSize(width: staminaBarWidth, height: staminaBarHeight), cornerRadius: 4)
         staminaBar.fillColor = .yellow // Stamina is often yellow
         staminaBar.strokeColor = .clear
@@ -103,7 +108,7 @@ class HUDNode: SKNode {
         container.position = CGPoint(x: containerX, y: containerY)
         //addChild(container)
     }
-
+    
     // This function's signature changes from Int to CGFloat
     func updateStaminaBar(currentStamina: CGFloat, maxStamina: CGFloat) {
         let staminaPercentage = currentStamina / maxStamina
@@ -121,17 +126,17 @@ class HUDNode: SKNode {
         goldenBoulderButton = SKSpriteNode(imageNamed: "greenGem")
         goldenBoulderButton.name = "goldenBoulderButton"
         goldenBoulderButton.setScale(0.03) // Adjust size as needed
-
+        
         // Position it to the right of the stamina bar
         let xPos = -size.width / 2.4 + 250
         let yPos = topHudY - 25
         goldenBoulderButton.position = CGPoint(x: xPos, y: yPos)
         //addChild(goldenBoulderButton)
-
+        
         // Start the button in a disabled state
         updateGoldenBoulderButton(currentStamina: 0, maxStamina: 100)
     }
-
+    
     // --- ADD THIS NEW FUNCTION ---
     /// Updates the button's appearance based on stamina level.
     func updateGoldenBoulderButton(currentStamina: CGFloat, maxStamina: CGFloat) {
@@ -143,7 +148,7 @@ class HUDNode: SKNode {
             goldenBoulderButton.alpha = 0.3
         }
     }
-
+    
     // --- Health Bar ---
     private func setupHealthBar(size: CGSize) {
         let container = SKNode()
@@ -164,7 +169,7 @@ class HUDNode: SKNode {
         let labelWidth = label.calculateAccumulatedFrame().width
         healthBarBackground.position = CGPoint(x: labelWidth + 10 + healthBarWidth/2, y: 0)
         container.addChild(healthBarBackground)
-
+        
         healthBar = SKShapeNode(rectOf: CGSize(width: healthBarWidth, height: healthBarHeight), cornerRadius: 5)
         healthBar.fillColor = .green
         healthBar.strokeColor = .clear
@@ -226,13 +231,13 @@ class HUDNode: SKNode {
             transform: nil
         )
     }
-
+    
     
     // --- ADD this new update function ---
     func updateLevelLabel(level: Int) {
         levelLabel.text = "Level: \(level)"
     }
-
+    
     // --- ADD this new function ---
     func showLevelUpMessage() {
         let levelUpLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
@@ -250,7 +255,7 @@ class HUDNode: SKNode {
         levelUpLabel.run(SKAction.sequence([scaleUp, wait, fadeOut, remove]))
         addChild(levelUpLabel)
     }
-
+    
     
     private func setupPauseButton(size: CGSize) {
         let pauseButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
@@ -259,10 +264,82 @@ class HUDNode: SKNode {
         pauseButton.fontColor = .black
         
         // Position in the center-top of the screen
-        let xPos = size.width / 3
-        let yPos = size.height / 3
+        let xPos = size.width / 2.5
+        let yPos = topHudY - 10
         pauseButton.position = CGPoint(x: xPos, y: yPos)
         pauseButton.name = "pauseButton"
         addChild(pauseButton)
     }
+    
+    
+    // --- UPDATED showMessage FUNCTION ---
+    /// Displays a message with a semi-transparent background that fades away after a few seconds.
+    /// - Parameter message: The string to display.
+    func showMessage(_ message: String) {
+        // 1. Create a container to hold the label and background together
+        let container = SKNode()
+        
+        // 2. Create the label, making the font slightly bigger
+        let messageLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        messageLabel.text = message
+        messageLabel.fontSize = 22 // Increased font size
+        messageLabel.fontColor = .white
+        messageLabel.zPosition = 1 // Will be on top of its background
+        messageLabel.verticalAlignmentMode = .center
+        messageLabel.horizontalAlignmentMode = .center
+        
+        // 3. Create the semi-transparent background
+        let padding: CGFloat = 15
+        let backgroundSize = CGSize(width: messageLabel.frame.width + padding * 2, height: messageLabel.frame.height + padding)
+        let background = SKShapeNode(rectOf: backgroundSize, cornerRadius: 10)
+        background.fillColor = .black
+        background.strokeColor = .clear
+        background.alpha = 0.6 // Makes it see-through
+        
+        // 4. Add the background and label to the container
+        container.addChild(background)
+        container.addChild(messageLabel)
+        
+        // 5. Position the entire container under the health bar
+        if let healthBarContainer = healthBarBackground.parent {
+            let healthBarPositionInHUD = healthBarContainer.convert(healthBarBackground.position, to: self)
+            // Adjust the Y-position slightly to account for the larger size
+            container.position = CGPoint(x: healthBarPositionInHUD.x, y: healthBarPositionInHUD.y - healthBarHeight - 25)
+        }
+        
+        // 6. Set initial state for animation
+        container.zPosition = self.zPosition + 10 // Ensure it's on top of everything else
+        container.alpha = 0
+        
+        // 7. Create the animation sequence
+        let fadeInAction = SKAction.fadeIn(withDuration: 0.3)
+        let waitAction = SKAction.wait(forDuration: 5.0)
+        let fadeOutAction = SKAction.fadeOut(withDuration: 0.5)
+        let removeAction = SKAction.removeFromParent()
+        
+        let messageSequence = SKAction.sequence([fadeInAction, waitAction, fadeOutAction, removeAction])
+        
+        // 8. Add the container to the HUD and run the animation
+        addChild(container)
+        container.run(messageSequence)
+    }
+    
+    // --- ADD THIS NEW FUNCTION ---
+    private func setupTimerLabel(size: CGSize) {
+        timerLabel = SKLabelNode(fontNamed: "Silkscreen") // Use your pixel font
+        timerLabel.text = "00:00"
+        timerLabel.fontSize = 24
+        timerLabel.fontColor = .white
+        // Position it at the top-center of the HUD
+        timerLabel.position = CGPoint(x: 0, y: topHudY - 50)
+        addChild(timerLabel)
+    }
+
+    // --- ADD THIS NEW FUNCTION ---
+    /// Updates the timer label with a formatted MM:SS string.
+    func updateTimer(time: TimeInterval) {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
+        }
 }

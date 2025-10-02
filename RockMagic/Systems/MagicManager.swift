@@ -24,40 +24,34 @@ class MagicManager {
     
     var magicBoundDistance: CGFloat = GameManager.shared.magicBoundaryDistance
     
-
-    
     init(scene: GameScene, player: PlayerNode, enemiesManager: EnemiesManager){
         self.scene = scene
         self.player = player
         self.enemiesManager = enemiesManager
     }
     
-    // --- ADD THIS NEW UPDATE FUNCTION ---
+    // --- UPDATE FUNCTION ---
     func update() {
-        // Loop through all boulders and call their update method
+        // update each boulder
         for boulder in boulders {
             boulder.update()
         }
         
-        // 1. Tell every pillar to run its update logic.
+        // update each pillar
         for pillar in pillars {
             pillar.update()
         }
         
-        // 2. Clean up any destroyed pillars from the tracking array.
+        // Clean up any destroyed pillars from the tracking array.
         pillars.removeAll { $0.parent == nil }
     }
     
-    // In MagicManager.swift
 
+    // MARK: - Summoning
+    
     func pullUpBoulder(position: CGPoint, playAnimation: Bool = true) {
-        // Check for stamina before doing anything
-//        guard let player = player, player.useStamina(cost: GameManager.shared.summonBoulderCost) else {
-//            print("Not enough stamina to summon!")
-//            return
-//        }
         guard let player = player else { return }
-        // 1. Define the area where the boulder will appear in the world.
+        // Define the area where the boulder will appear in the world.
         let offset = position.x - 25
         let spot: CGFloat = setBendingBoundary(locationToCheck: offset)
         
@@ -67,12 +61,9 @@ class MagicManager {
         if playAnimation {
             player.playAnimation(.summonBoulder)
         }
-        
-        
-        
-        
+
         // 3. Check if any enemies are in that area.
-        //var launchedAnEnemy = false
+
         if let enemies = enemiesManager?.enemies {
             for enemy in enemies {
                 // An enemy's frame is already in world coordinates.
@@ -83,12 +74,9 @@ class MagicManager {
             }
         }
         
-        // Give a 1 in 10 chance to spawn a golden boulder.
-        //let boulderType: BoulderType = (Int.random(in: 1...3) == 4) ? .golden : .normal
         
         // Create the boulder with the chosen type.
         let boulder = Boulder(type: .normal)
-        //boulder.gameScene = self.scene
 
         // Define the start and end points for the animation
         let finalYPosition: CGFloat = GameManager.shared.boulderFinalY
@@ -118,8 +106,6 @@ class MagicManager {
     }
     
     func pullUpPillar(at: CGPoint) -> PillarNode{
-        //print("place holder for pulling up a pillar", at)
-        
         // sets position
         let pillar = PillarNode()
         pillar.position.x = at.x
@@ -129,9 +115,9 @@ class MagicManager {
         
         pillars.append(pillar)
         
-        // 2. Check if we are now over the limit.
+        // Check if the new pillar puts us over the limit.
         if pillars.count > GameManager.shared.maxPillarCount {
-            // 3. If yes, get the oldest pillar (the first one in the array) and destroy it.
+            // If yes, destroy the oldest pillar (the first one in the array)
             let oldestPillar = pillars.removeFirst()
             oldestPillar.destroy()
         }
@@ -143,7 +129,6 @@ class MagicManager {
         
     }
     
-    // In MagicManager.swift
 
     /// Creates a boulder specifically for the player's boulder jump.
     /// This version is simpler and doesn't check for collisions.
@@ -171,135 +156,13 @@ class MagicManager {
         }
         boulders.append(boulder)
     }
-    
-    
-    
-    // In MagicManager.swift
-
-    /// Creates a golden boulder directly in front of the player.
-    func pullUpGoldenBoulderAtPlayer() {
-        guard let player = player, let scene = scene else { return }
-        
-        // Check for full stamina before proceeding.
-        guard player.currentStamina >= player.maxStamina else {
-            print("Not enough stamina for golden boulder!")
-            return
-        }
-        
-        // Instantly use all stamina.
-        //player.currentStamina = 0
-        //(scene as? GameScene)?.playerUsedStamina()
-        
-        // Create a golden boulder.
-        let boulder = Boulder(type: .golden)
-        
-        // Position it in front of the player.
-        let direction: CGFloat = player.isFacingRight ? 1 : -1
-        let spawnX = player.worldPosition.x + (50 * direction)
-        boulder.position = CGPoint(x: spawnX, y: GameManager.shared.boulderFinalY)
-        
-        // Add it to the world.
-        scene.worldNode.addChild(boulder)
-        boulder.setupJoints(in: scene)
-        boulders.append(boulder)
-    }
-
-    
-    
-    
-//    private func setBendingBoundary(locationToCheck: CGFloat) -> CGFloat {
-//        // Checks area between magic bounds
-//        if locationToCheck < (player?.worldPosition.x)! + magicBoundDistance && locationToCheck > (player?.worldPosition.x)! - magicBoundDistance{
-//            print("OH yeah")
-//            
-//            return locationToCheck
-//            
-//        } else if locationToCheck > (player?.worldPosition.x)! + magicBoundDistance { // Checks spot to the right
-//            return (player?.worldPosition.x)! + magicBoundDistance - 25
-//        } else { // otherwise to the left
-//            return (player?.worldPosition.x)! - magicBoundDistance - 25
-//        }
-//    }
-    
-    private func setBendingBoundary(locationToCheck: CGFloat) -> CGFloat {
-        // Safely unwrap the player and its position. If it fails, return the original location.
-        guard let playerPositionX = player?.worldPosition.x else {
-            print("Error: Player position could not be determined.")
-            return locationToCheck
-        }
-        
-        let worldWidth = scene!.size.width * 3
-        print("MM World width: ", worldWidth)
-        
-        if locationToCheck > (worldWidth / 2) - 70{
-            print("OUT OF BOUNDS RIGHT")
-            return (worldWidth / 2) - 75
-        } else if locationToCheck < -worldWidth / 2 {
-            print("OUT OF BOUNDS Left")
-
-            return -worldWidth / 2
-        }
-        
-        // Checks area between magic bounds
-        if locationToCheck < playerPositionX + magicBoundDistance && locationToCheck > playerPositionX - magicBoundDistance {
-            
-            return locationToCheck
-            
-        } else if locationToCheck > playerPositionX + magicBoundDistance{ // Checks spot to the right
-            return playerPositionX + magicBoundDistance - 25
-            
-        } else { // otherwise to the left
-            return playerPositionX - magicBoundDistance - 25
-        }
-    }
-
-     func closestBoulder() -> Boulder? {
-        guard let player = player else { return nil }
-
-         let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld && $0.type != .golden }
-
-        return activeBoulders.min(by: {
-            $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
-        })
-    }
-    
-    func farthestBoulder() -> Boulder? {
-        guard let player = player else { return nil }
-
-        let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld && $0.type != .golden }
-
-        // Use .max(by:) instead of .min(by:) to find the element with the greatest distance.
-        return activeBoulders.max(by: {
-            $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
-        })
-    }
 
 
-    
-    /// Launches the whole boulder (remaining pieces)
-        func launchBoulderOG(direction: CGVector) {
-            currentBoulder = closestBoulder()
-            currentBoulder?.launchAllRemainingPieces(direction: direction)
-            
-        }
-    
-    /// Shoots a single piece of the boulder
-        func shootRockPieceOG(direction: CGVector) {
-            currentBoulder = closestBoulder()
-            currentBoulder?.launchSinglePiece(direction: direction)
-            if currentBoulder?.isDepleted == true {
-                currentBoulder = nil
-            }
-        }
-    
-    // In MagicManager.swift
+ 
+    // MARK: - Attacks
 
     func launchBoulder(direction: LaunchDirection) {
-        // Check for stamina
-//        guard let player = player, player.useStamina(cost: GameManager.shared.launchBoulderCost) else {
-//            print("Not enough stamina to launch!")
-//            return
-//        }
+
         currentBoulder = closestBoulder()
         guard let boulderToLaunch = currentBoulder else { return }
         
@@ -307,7 +170,7 @@ class MagicManager {
         EffectManager.shared.playStrongAttackEffect(at: boulderToLaunch.position, direction: direction, level: GameManager.shared.strongAttackLevel)
             
         // --- Proactive Hit Detection ---
-        // 1. Define a "hitbox" in front of the boulder.
+        //  Define a "hitbox" in front of the boulder.
         let hitboxWidth: CGFloat = 30
         let hitboxHeight = boulderToLaunch.calculateAccumulatedFrame().height
         // --- THE FIX: Correctly calculate the hitbox's X position ---
@@ -356,18 +219,8 @@ class MagicManager {
     }
 
     func shootRockPiece(direction: LaunchDirection) {
-        // Check for stamina
-//        guard let player = player, player.useStamina(cost: GameManager.shared.shootPieceCost) else {
-//            print("Not enough stamina to shoot!")
-//            return
-//        }
-        //guard let player = player else { return }
-        
         currentBoulder = closestBoulder()
         guard let boulderToShoot = currentBoulder, let topPiece = boulderToShoot.pieces.last(where: { $0.isAttached }) else { return }
-        
-        
-        
         
         // --- Apply the same fix here ---
         let hitboxWidth: CGFloat = 30
@@ -432,18 +285,11 @@ class MagicManager {
             currentBoulder = nil
         }
     }
-    
-    /// Safely removes a specific boulder from the internal tracking array.
-    func remove(boulder: Boulder) {
-        boulders.removeAll { $0 === boulder }
-    }
-    
-    // In MagicManager.swift
 
     /// Launches the nearest boulder in a parabolic arc to a target location for a splash attack.
     func splashAttack(at targetLocation: CGPoint) {
         // 1. Find the nearest available boulder.
-        guard let boulder = farthestBoulder() else {
+        guard let boulder = closestBoulder() else {
             print("No boulder available for splash attack.")
             return
         }
@@ -482,7 +328,7 @@ class MagicManager {
     private func createSplashHitbox(at location: CGPoint) {
         guard let enemies = enemiesManager?.enemies else { return }
         
-        // --- ADD THIS LINE to play the effect ---
+        // --- play the effect ---
         EffectManager.shared.playSplashAttackEffect(at: location, level: GameManager.shared.splashAttackLevel)
 
         
@@ -527,72 +373,69 @@ class MagicManager {
                 enemy.shield = false
                 enemy.updateShieldVisibility()
                 
-//                // --- THE FIX: We need a rockPiece to pass to getTossed ---
-//                // Create a temporary, invisible rock piece to act as the source of the damage.
-//                let dummyPiece = RockPiece(color: .clear, size: .zero)
-//                
-//                // Call getTossed with the new .splash attack type
-//                enemy.getTossed(by: dummyPiece, bypassVelocityCheck: true, attackType: .splash)
             }
         }
     }
     
-    // In MagicManager.swift
-// MOST RECENT
-//    func launchBoulder(direction: LaunchDirection) {
-//        currentBoulder = closestBoulder()
-//        guard let boulderToLaunch = currentBoulder else { return }
-//
-//        // --- THE FIX: Nudge the boulder just before launching ---
-//        boulderToLaunch.nudge()
-//        
-//        let horizontalForce: CGFloat = GameManager.shared.launchBoulderForce
-//        let verticalForce: CGFloat = 500.0
-//        var launchVector: CGVector
-//        
-//        switch direction {
-//        case .left:
-//            launchVector = CGVector(dx: -horizontalForce, dy: verticalForce)
-//        case .right:
-//            launchVector = CGVector(dx: horizontalForce, dy: verticalForce)
-//        }
-//        // Use a guard to make sure a boulder was actually found
-//        guard let boulderToLaunch = currentBoulder else { return }
-//
-//        //boulderToLaunch.launchAllRemainingPieces(direction: launchVector)
-//        boulderToLaunch.launchAllPiecesWithNudge(direction: launchVector)
-//    }
-//
-//    func shootRockPiece(direction: LaunchDirection) {
-//        currentBoulder = closestBoulder()
-//        var launchVector: CGVector
-//        let horizontalForce: CGFloat = GameManager.shared.quickStrikeForce
-//        let verticalForce: CGFloat = 5.0
-//        
-//        switch direction {
-//        case .left:
-//            launchVector = CGVector(dx: -horizontalForce, dy: verticalForce)
-//        case .right:
-//            launchVector = CGVector(dx: horizontalForce, dy: verticalForce)
-//        }
-//        
-//        // Use a guard here as well
-//        guard let boulderToShoot = currentBoulder else { return }
-//        
-//        //boulderToShoot.launchSinglePiece(direction: launchVector)
-//        boulderToShoot.launchSinglePieceWithNudge(direction: launchVector)
-//        
-//        if boulderToShoot.isDepleted {
-//            // Remove from the tracking array
-//            boulders.removeAll(where: { $0 === boulderToShoot })
-//            
-//            // You can optionally fade it out before removing
-//            let sequence = SKAction.sequence([SKAction.fadeOut(withDuration: 2.0), SKAction.removeFromParent()])
-//            boulderToShoot.run(sequence)
-//
-//            currentBoulder = nil
-//        }
-//    }
     
+    // MARK: - Helpers
+    
+    private func setBendingBoundary(locationToCheck: CGFloat) -> CGFloat {
+        // Safely unwrap the player and its position. If it fails, return the original location.
+        guard let playerPositionX = player?.worldPosition.x else {
+            print("Error: Player position could not be determined.")
+            return locationToCheck
+        }
+        
+        let worldWidth = scene!.size.width * 3
+        print("MM World width: ", worldWidth)
+        
+        if locationToCheck > (worldWidth / 2) - 70{
+            print("OUT OF BOUNDS RIGHT")
+            return (worldWidth / 2) - 75
+        } else if locationToCheck < -worldWidth / 2 {
+            print("OUT OF BOUNDS Left")
+
+            return -worldWidth / 2
+        }
+        
+        // Checks area between magic bounds
+        if locationToCheck < playerPositionX + magicBoundDistance && locationToCheck > playerPositionX - magicBoundDistance {
+            
+            return locationToCheck
+            
+        } else if locationToCheck > playerPositionX + magicBoundDistance{ // Checks spot to the right
+            return playerPositionX + magicBoundDistance - 25
+            
+        } else { // otherwise to the left
+            return playerPositionX - magicBoundDistance - 25
+        }
+    }
+
+     func closestBoulder() -> Boulder? {
+        guard let player = player else { return nil }
+
+        let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld && $0.type != .golden }
+
+        return activeBoulders.min(by: {
+            $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
+        })
+    }
+    
+    func farthestBoulder() -> Boulder? {
+        guard let player = player else { return nil }
+
+        let activeBoulders = boulders.filter { !$0.isDepleted && !$0.isBeingHeld && $0.type != .golden }
+
+        // Use .max(by:) instead of .min(by:) to find the element with the greatest distance.
+        return activeBoulders.max(by: {
+            $0.position.distance(to: player.worldPosition) < $1.position.distance(to: player.worldPosition)
+        })
+    }
+    
+    /// Safely removes a specific boulder from the internal tracking array.
+    func remove(boulder: Boulder) {
+        boulders.removeAll { $0 === boulder }
+    }
     
 }

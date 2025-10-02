@@ -17,6 +17,9 @@ class GameManager {
     static let shared = GameManager()
     weak var scene: GameScene?
     
+    let designSize = CGSize(width: 1334, height: 750)
+
+    
     // --- Player Progression ---
     var playerLevel: Int = 1
     var currentScore: Int = 0
@@ -68,7 +71,7 @@ class GameManager {
     let enemyAttackCooldown: TimeInterval = 1.5 // Attacks once every 1.5 seconds
     
     /// How far the player can summon a boulder from their position.
-    let magicBoundaryDistance: CGFloat = 175.0
+    let magicBoundaryDistance: CGFloat = 275.0
     let boulderBrakes:CGFloat = 10.0
     let boulderHighlightRadius:CGFloat = 25
     
@@ -91,6 +94,10 @@ class GameManager {
     // --- The Computed Properties ---
     var groundLevel: CGFloat {
         return groundY + groundHeight / 2// 30 points above the ground
+    }
+    
+    var enemyBaseLevel: CGFloat {
+        return groundLevel + 40
     }
     
     var playerStartY: CGFloat {
@@ -203,7 +210,7 @@ class GameManager {
     
     
     // --- Difficulty Progression ---
-    private var gameTime: TimeInterval = 0
+    var gameTime: TimeInterval = 0
     private var timeSinceLastDifficultyIncrease: TimeInterval = 0
     private let timeToIncreaseDifficulty: TimeInterval = 15 // Increase difficulty every 15 seconds
     let healthPickupSpawnInterval: TimeInterval = 10.0 // Every 10 se

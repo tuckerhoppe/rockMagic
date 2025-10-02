@@ -8,7 +8,8 @@
 // --- ADD THIS PROTOCOL at the top of the file ---
 protocol MainMenuSceneDelegate: AnyObject {
     //func mainMenuDidTapStart(_ scene: MainMenuScene)
-    func mainMenu(_ scene: MainMenuScene, didSelectMode mode: gameMode)
+    //func mainMenu(_ scene: MainMenuScene, didSelectMode mode: gameMode)
+    func mainMenu(_ scene: MainMenuScene, didSelectLevelID id: Int)
     func mainMenuDidTapHighScores(_ scene: MainMenuScene)
 }
 
@@ -22,6 +23,7 @@ class MainMenuScene: SKScene {
 
     // --- Properties ---
     private var instructionsOverlay: SKNode!
+    private var levelSelectOverlay: SKNode!
     private var mainMenuButtons: [SKNode] = []
     
     // --- 1. Use a simpler initializer ---
@@ -57,7 +59,7 @@ class MainMenuScene: SKScene {
         StoryButton.fontSize = 40
         StoryButton.fontColor = .cyan
         StoryButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.55)
-        StoryButton.name = "StoryButton"
+        StoryButton.name = "storyButton"
         addChild(StoryButton)
         
         let survivalButton = SKLabelNode(fontNamed: GameManager.shared.fontName)
@@ -102,9 +104,63 @@ class MainMenuScene: SKScene {
         addChild(highScoresButton)
         
         // Keep a reference to the main buttons to easily hide/show them
-        mainMenuButtons = [titleLabel, survivalButton, defenseButton, instructionsButton, highScoresButton]
+        mainMenuButtons = [titleLabel, survivalButton, defenseButton, instructionsButton, highScoresButton, attackButton, StoryButton]
         // --- Setup the hidden instructions overlay ---
         setupInstructionsOverlay()
+        setupLevelSelectOverlay() // Call the new setup function
+    }
+    
+    // --- ADD THIS ENTIRE NEW FUNCTION ---
+    private func setupLevelSelectOverlay() {
+        levelSelectOverlay = SKNode()
+        
+        let panel = SKSpriteNode(color: .black.withAlphaComponent(0.8), size: self.size)
+        panel.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
+        levelSelectOverlay.addChild(panel)
+        
+        let title = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        title.text = "Select Level"
+        title.fontSize = 48
+        title.fontColor = .white
+        title.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.80)
+        levelSelectOverlay.addChild(title)
+
+        // --- Create Level Buttons ---
+        let level1Button = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        level1Button.text = "Level 1"
+        level1Button.fontSize = 40
+        level1Button.fontColor = .cyan
+        level1Button.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.70)
+        level1Button.name = "level_1" // Name corresponds to level ID
+        levelSelectOverlay.addChild(level1Button)
+        
+        let level2Button = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        level2Button.text = "Level 2"
+        level2Button.fontSize = 40
+        level2Button.fontColor = .cyan
+        level2Button.position = CGPoint(x: self.size.width / 2, y: level1Button.position.y - 50)
+        level2Button.name = "level_2"
+        levelSelectOverlay.addChild(level2Button)
+        
+        let level3Button = SKLabelNode(fontNamed: GameManager.shared.fontName)
+        level3Button.text = "Level 3"
+        level3Button.fontSize = 40
+        level3Button.fontColor = .cyan
+        level3Button.position = CGPoint(x: self.size.width / 2, y: level2Button.position.y - 50)
+        level3Button.name = "level_3"
+        levelSelectOverlay.addChild(level3Button)
+        
+        // --- Create a back button for this overlay ---
+        let backButton = SKLabelNode(fontNamed: "Menlo-Bold")
+        backButton.text = "Back to Menu"
+        backButton.fontSize = 30
+        backButton.fontColor = .white
+        backButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.15)
+        backButton.name = "backToMenuButton"
+        levelSelectOverlay.addChild(backButton)
+        
+        levelSelectOverlay.isHidden = true
+        addChild(levelSelectOverlay)
     }
     
     // In MainMenuScene.swift
@@ -142,55 +198,7 @@ class MainMenuScene: SKScene {
         instructionsOverlay.isHidden = true
         addChild(instructionsOverlay)
     }
-    
-    // --- Instructions Overlay Setup ---
-    private func setupInstructionsOverlayOG() {
-        instructionsOverlay = SKNode()
         
-        // Create a semi-transparent background panel
-        let panel = SKSpriteNode(color: .black.withAlphaComponent(0.8), size: self.size)
-        panel.position = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
-        instructionsOverlay.addChild(panel)
-        
-        // Create the content
-        let title = SKLabelNode(fontNamed: "Menlo-Bold")
-        title.text = "How to Play"
-        title.fontSize = 48
-        title.fontColor = .white
-        title.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.8)
-        instructionsOverlay.addChild(title)
-        
-        let instructionsText = """
-        Swipe Up: Pull a boulder from the ground.
-        Swipe Left/Right: Launch the whole boulder.
-        Tap: Fire a single piece from the boulder.
-        
-        Summon a boulder under an enemy to launch them!
-        Summon a boulder under yourself to jump!
-        """
-        
-        let instructionsLabel = SKLabelNode(fontNamed: GameManager.shared.fontName)
-        instructionsLabel.text = instructionsText
-        instructionsLabel.fontSize = 20
-        instructionsLabel.fontColor = .white
-        instructionsLabel.numberOfLines = 0 // Allow multiple lines
-        instructionsLabel.preferredMaxLayoutWidth = self.size.width * 0.8
-        instructionsLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height / 3)
-        instructionsOverlay.addChild(instructionsLabel)
-        
-        let backButton = SKLabelNode(fontNamed: "Menlo-Bold")
-        backButton.text = "Back"
-        backButton.fontSize = 30
-        backButton.fontColor = .cyan
-        backButton.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.2)
-        backButton.name = "backButton"
-        instructionsOverlay.addChild(backButton)
-        
-        // Add the overlay to the scene, but keep it hidden
-        instructionsOverlay.isHidden = true
-        addChild(instructionsOverlay)
-    }
-    
     // --- Touch Handling ---
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
@@ -198,20 +206,34 @@ class MainMenuScene: SKScene {
         let tappedNode = nodes(at: location).first
         
         // --- THE FIX: Handle the new buttons ---
-        if tappedNode?.name == "survivalButton" {
+        
+        // --- THE FIX: Check for the new level buttons ---
+        if let name = tappedNode?.name, name.starts(with: "level_") {
+            // Extract the number from the name (e.g., "level_1" -> 1)
+            let levelIDString = name.replacingOccurrences(of: "level_", with: "")
+            if let levelID = Int(levelIDString) {
+                // Tell the delegate which level to start.
+                menuDelegate?.mainMenu(self, didSelectLevelID: levelID)
+            }
+        } else if tappedNode?.name == "storyButton" {
             // Tell the delegate to start a survival game.
-            menuDelegate?.mainMenu(self, didSelectMode: .survival)
+            showLevelSelect()
+        } else if tappedNode?.name == "survivalButton" {
+            // Tell the delegate to start a survival game.
+            menuDelegate?.mainMenu(self, didSelectLevelID: -1)
         } else if tappedNode?.name == "defenseButton" {
             // Tell the delegate to start a defense game.
-            menuDelegate?.mainMenu(self, didSelectMode: .defense)
+            menuDelegate?.mainMenu(self, didSelectLevelID: -2)
         } else if tappedNode?.name == "attackButton" {
             // Tell the delegate to start a defense game.
-            menuDelegate?.mainMenu(self, didSelectMode: .attack)
+            menuDelegate?.mainMenu(self, didSelectLevelID: -3)
             
         }else if tappedNode?.name == "instructionsButton" {
             showInstructions()
         } else if tappedNode?.name == "backButton" {
             hideInstructions()
+        } else if tappedNode?.name == "backToMenuButton" {
+            hideLevelSelect()
         } else if tappedNode?.name == "highScoresButton" {
             // Transition to the HighScoreScene
 //            let highScoreScene = HighScoreScene(size: self.size)
@@ -233,6 +255,18 @@ class MainMenuScene: SKScene {
         instructionsOverlay.isHidden = true
         mainMenuButtons.forEach { $0.isHidden = false }
     }
+    
+    // --- ADD THESE NEW FUNCTIONS for level select ---
+    private func showLevelSelect() {
+        levelSelectOverlay.isHidden = false
+        mainMenuButtons.forEach { $0.isHidden = true }
+    }
+    
+    private func hideLevelSelect() {
+        levelSelectOverlay.isHidden = true
+        mainMenuButtons.forEach { $0.isHidden = false }
+    }
+
     
 //    private func startGame() {
 //        guard let gameScene = GameScene(fileNamed: "GameScene") else { return }

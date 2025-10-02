@@ -35,6 +35,7 @@
 		B16D55C62E80AA290006FCFA /* PressStart2P-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B16D55C52E80AA290006FCFA /* PressStart2P-Regular.ttf */; };
 		B16D55C82E80B5D00006FCFA /* VT323-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B16D55C72E80B5D00006FCFA /* VT323-Regular.ttf */; };
 		B16D55CC2E84DB510006FCFA /* LevelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B16D55CB2E84DB4C0006FCFA /* LevelData.swift */; };
+		B16D55CE2E8DBA610006FCFA /* EnvironmentObjectNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B16D55CD2E8DBA520006FCFA /* EnvironmentObjectNode.swift */; };
 		B172ACD82E4C3AC10013B108 /* UpgradeMenuNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACD72E4C3ABD0013B108 /* UpgradeMenuNode.swift */; };
 		B172ACDA2E4E79690013B108 /* EffectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACD92E4E79660013B108 /* EffectManager.swift */; };
 		B172ACDC2E4FDAAB0013B108 /* ViewUpgradesNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172ACDB2E4FDA9D0013B108 /* ViewUpgradesNode.swift */; };
@@ -105,6 +106,7 @@
 		B16D55C52E80AA290006FCFA /* PressStart2P-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PressStart2P-Regular.ttf"; sourceTree = "<group>"; };
 		B16D55C72E80B5D00006FCFA /* VT323-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "VT323-Regular.ttf"; sourceTree = "<group>"; };
 		B16D55CB2E84DB4C0006FCFA /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
+		B16D55CD2E8DBA520006FCFA /* EnvironmentObjectNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentObjectNode.swift; sourceTree = "<group>"; };
 		B172ACD72E4C3ABD0013B108 /* UpgradeMenuNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeMenuNode.swift; sourceTree = "<group>"; };
 		B172ACD92E4E79660013B108 /* EffectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectManager.swift; sourceTree = "<group>"; };
 		B172ACDB2E4FDA9D0013B108 /* ViewUpgradesNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewUpgradesNode.swift; sourceTree = "<group>"; };
@@ -224,8 +226,9 @@
 		B105A4FF2DC075D9006F1FC4 /* Nodes */ = {
 			isa = PBXGroup;
 			children = (
-				B105A5032DC078E0006F1FC4 /* PlayerNode.swift */,
 				B175122B2E30882300621AFC /* PauseMenuNode.swift */,
+				B16D55CD2E8DBA520006FCFA /* EnvironmentObjectNode.swift */,
+				B105A5032DC078E0006F1FC4 /* PlayerNode.swift */,
 				B105A5F92DC7FD23006F1FC4 /* BoulderNode.swift */,
 				B172ACE42E5D1F800013B108 /* PillarNode.swift */,
 				B114F9872E64232900EC0440 /* BoulderHutNode.swift */,
@@ -418,6 +421,7 @@
 				B17512222E2987E000621AFC /* InputManager.swift in Sources */,
 				B17512282E30254A00621AFC /* GameManager.swift in Sources */,
 				B105A4D22DC072FF006F1FC4 /* GameScene.swift in Sources */,
+				B16D55CE2E8DBA610006FCFA /* EnvironmentObjectNode.swift in Sources */,
 				B105A5FA2DC7FD23006F1FC4 /* BoulderNode.swift in Sources */,
 				B105A5492DC1DEEA006F1FC4 /* Joystick.swift in Sources */,
 				B172ACD82E4C3AC10013B108 /* UpgradeMenuNode.swift in Sources */,
@@ -630,7 +634,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = RockMagic/RockMagic.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 7WF7JMYH94;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RockMagic/Info.plist;
@@ -644,7 +648,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tuckerhoppe.RockMagic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -660,7 +664,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = RockMagic/RockMagic.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 7WF7JMYH94;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RockMagic/Info.plist;
@@ -674,7 +678,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tuckerhoppe.RockMagic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
